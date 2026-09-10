@@ -47,7 +47,7 @@ by default even when the board is closed. This is not a guaranteed OS-level alar
 
 Commands: Open Status Board, Refresh Status Board, Show Setup Instructions, and
 Test Notification, all under **Codex Task Notifier** in the Command Palette.
-The settings menu includes a link to support the project on Ko-fi.
+The settings menu includes a **Donate** link to Ko-fi.
 Settings: `codexTaskNotifier.autoOpen`, `codexTaskNotifier.notifications`, and optional
 `codexTaskNotifier.legacyStatusFile` (absolute path on the extension host). The legacy
 setting can read an existing status.json directly without its HTTP server; do not
@@ -68,7 +68,7 @@ npm test
 npm run package
 ```
 
-The dependency-free packager creates `codex-task-notifier-0.2.0.vsix` from an explicit
+The dependency-free packager creates `codex-task-notifier-0.2.2.vsix` from an explicit
 allowlist. It contains the page, extension, state logic, six WAVs, and public docs;
 no user paths, task state, PowerShell scripts, server, or developer files are bundled.
 The identifier remains `local-tools.codex-status-board` to upgrade existing local

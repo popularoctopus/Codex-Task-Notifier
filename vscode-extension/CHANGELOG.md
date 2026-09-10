@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- Simplify the Ko-fi menu link label to `Donate`.
+
 ## 0.2.1
 
 - Add a Ko-fi support link to the settings menu.
