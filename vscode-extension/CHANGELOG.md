@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Add a Ko-fi support link to the settings menu.
+
 ## 0.2.0
 
 - Bundle the board and all six WAV sounds in the extension.
