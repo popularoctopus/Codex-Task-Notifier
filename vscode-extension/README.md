@@ -47,7 +47,8 @@ by default even when the board is closed. This is not a guaranteed OS-level alar
 
 Commands: Open Status Board, Refresh Status Board, Show Setup Instructions, and
 Test Notification, all under **Codex Task Notifier** in the Command Palette.
-The settings menu includes a **Donate** link to Ko-fi.
+The settings menu includes a **Codex setup instructions** button that opens the
+manual AGENTS.md integration guide, plus a **Donate** link to Ko-fi.
 Settings: `codexTaskNotifier.autoOpen`, `codexTaskNotifier.notifications`, and optional
 `codexTaskNotifier.legacyStatusFile` (absolute path on the extension host). The legacy
 setting can read an existing status.json directly without its HTTP server; do not

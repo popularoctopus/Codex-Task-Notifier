@@ -27,6 +27,7 @@ function activate(context) {
     current.onDidDispose(() => { if (panel === current) panel = undefined; });
     current.webview.onDidReceiveMessage(message => {
       if (message?.type === 'ready') send();
+      if (message?.type === 'instructions') void instructions();
       if (message?.type === 'preferences' && message.values && typeof message.values === 'object') {
         const clean = {};
         for (const key of ['codexMode','codexFont','codexSound']) {

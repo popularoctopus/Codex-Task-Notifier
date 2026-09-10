@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+
+- Add setup instructions to the board settings menu.
+
 ## 0.2.2
 
 - Simplify the Ko-fi menu link label to `Donate`.
