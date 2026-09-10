@@ -1,0 +1,15 @@
+# Track the portable source; keep legacy local files and rollback copies untracked.
+/*
+!/.gitignore
+!/LICENSE
+!/README.md
+!/PORTABLE-INSTRUCTIONS.md
+!/vscode-extension/
+
+**/node_modules/
+**/*.vsix
+**/.codex-task-status.json
+**/status.json
+**/.DS_Store
+**/Thumbs.db
+**/*.log

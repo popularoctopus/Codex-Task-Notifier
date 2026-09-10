@@ -1,0 +1,33 @@
+{
+  "name": "codex-status-board",
+  "displayName": "Codex Task Notifier",
+  "description": "A self-contained task status board with completion sounds for Codex workspaces.",
+  "version": "0.2.0",
+  "publisher": "local-tools",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/popularoctopus/Codex-Task-Notifier.git", "directory": "vscode-extension" },
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "keywords": ["codex", "tasks", "notifications"],
+  "extensionKind": ["workspace"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "scripts": { "test": "node --test test", "package": "node package.cjs" },
+  "files": ["extension.js", "state.js", "index.html", "sounds", "README.md", "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md"],
+  "contributes": {
+    "commands": [
+      {"command":"codexStatus.open","title":"Codex Task Notifier: Open Status Board"},
+      {"command":"codexStatus.refresh","title":"Codex Task Notifier: Refresh Status Board"},
+      {"command":"codexStatus.instructions","title":"Codex Task Notifier: Show Setup Instructions"},
+      {"command":"codexStatus.test","title":"Codex Task Notifier: Test Notification"}
+    ],
+    "configuration": {
+      "title":"Codex Task Notifier",
+      "properties": {
+        "codexTaskNotifier.autoOpen":{"type":"boolean","default":true,"description":"Open or select the board when a task starts in a focused window."},
+        "codexTaskNotifier.notifications":{"type":"boolean","default":true,"description":"Show a VS Code notification when a task finishes."},
+        "codexTaskNotifier.legacyStatusFile":{"type":"string","default":"","scope":"machine","description":"Optional absolute path to a legacy status.json file. Leave empty for portable workspace status files."}
+      }
+    }
+  }
+}

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="codex-status-board" content="v1">
+  <title>Codex Task Notifier</title>
+  <style>
+    html, body { margin: 0; min-height: 100%; }
+    body { --done-bg: #fff; --done-text: #000; --working-bg: #000; --working-text: #fff;
+      min-height: 100vh; min-height: 100dvh; display: grid; place-items: center;
+      background: var(--done-bg); color: var(--done-text); font-family: "Cloister Black", "Old English Text MT", "Segoe UI", serif; }
+    body.light-mode { --done-bg: #000; --done-text: #fff; --working-bg: #fff; --working-text: #000; }
+    body.ready { background: var(--working-bg); color: var(--working-text); }
+    body.working { background: var(--working-bg); color: var(--working-text); }
+    body.done-flash { animation: done-flash 400ms steps(1, end) 3; }
+    @keyframes done-flash {
+      0%, 100% { background: var(--done-bg); color: var(--done-text); }
+      50% { background: var(--working-bg); color: var(--working-text); }
+    }
+    #status { font-size: clamp(2rem, 12vw, 12rem); font-weight: 700; text-align: center; }
+    #menu-button { position: fixed; top: 1rem; right: 1rem; z-index: 2; width: 3rem; height: 3rem;
+      border: 1px solid currentColor; border-radius: .35rem; background: transparent; color: inherit;
+      cursor: pointer; font-size: 1.7rem; line-height: 1; }
+    #menu-button:focus-visible, input:focus-visible, .preview:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+    #menu { position: fixed; top: 5rem; right: 1rem; z-index: 2; width: min(19rem, calc(100vw - 2rem));
+      max-height: calc(100vh - 6rem); overflow: auto; padding: 1rem; border: 1px solid currentColor;
+      background: Canvas; color: CanvasText; box-shadow: 0 .5rem 2rem #0005; }
+    #menu[hidden] { display: none; }
+    fieldset { margin: 0 0 1rem; padding: .6rem .8rem .8rem; border: 1px solid currentColor; }
+    legend { padding: 0 .3rem; font-weight: 700; }
+    label { display: flex; align-items: center; gap: .5rem; margin: .35rem 0; cursor: pointer; }
+    #menu legend, #menu .theme-settings label, #menu .sound-settings label, #menu .sound-settings .preview {
+      font-family: Arial, sans-serif;
+    }
+    .preview { margin-left: auto; border: 1px solid currentColor; border-radius: .2rem; background: transparent; color: inherit; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button id="menu-button" type="button" aria-label="Open settings" aria-expanded="false" aria-controls="menu">☰</button>
+  <aside id="menu" hidden>
+    <fieldset class="theme-settings"><legend>Mode</legend>
+      <label><input type="radio" name="mode" value="dark">Dark Mode</label>
+      <label><input type="radio" name="mode" value="light">Light Mode</label>
+    </fieldset>
+    <fieldset><legend>Font</legend>
+      <label style="font-family: Arial, sans-serif"><input type="radio" name="font" value='Arial, sans-serif'>Arial</label>
+      <label style="font-family: Georgia, serif"><input type="radio" name="font" value='Georgia, serif'>Georgia</label>
+      <label style='font-family: "Times New Roman", serif'><input type="radio" name="font" value='"Times New Roman", serif'>Times New Roman</label>
+      <label style='font-family: "Courier New", monospace'><input type="radio" name="font" value='"Courier New", monospace'>Courier New</label>
+      <label style="font-family: Impact, sans-serif"><input type="radio" name="font" value='Impact, sans-serif'>Impact</label>
+      <label style="font-family: Pacifico, cursive"><input type="radio" name="font" value='Pacifico, cursive'>Pacifico</label>
+      <label style='font-family: "Cloister Black", "Old English Text MT", serif'><input type="radio" name="font" value='"Cloister Black", "Old English Text MT", serif'>Cloister Black</label>
+    </fieldset>
+    <fieldset class="sound-settings"><legend>Notification Sound</legend>
+      <label><input type="radio" name="sound" value="magic.wav">Magic <button class="preview" type="button" data-sound="magic.wav">Play</button></label>
+      <label><input type="radio" name="sound" value="flute.wav">Flute <button class="preview" type="button" data-sound="flute.wav">Play</button></label>
+      <label><input type="radio" name="sound" value="marimba.wav">Marimba <button class="preview" type="button" data-sound="marimba.wav">Play</button></label>
+      <label><input type="radio" name="sound" value="scifi.wav">Scifi <button class="preview" type="button" data-sound="scifi.wav">Play</button></label>
+      <label><input type="radio" name="sound" value="positive.wav">Positive <button class="preview" type="button" data-sound="positive.wav">Play</button></label>
+      <label><input type="radio" name="sound" value="software.wav">Software <button class="preview" type="button" data-sound="software.wav">Play</button></label>
+    </fieldset>
+  </aside>
+  <main id="status" role="status" aria-live="polite">Ready</main>
+  <script>
+    const api = acquireVsCodeApi();
+    let settings = api.getState() || {};
+    const localStorage = {
+      getItem: key => settings[key],
+      setItem(key, value) {
+        settings[key] = value;
+        api.setState(settings);
+        api.postMessage({type:'preferences', values:settings});
+      }
+    };
+    const label = document.getElementById('status');
+    const menuButton = document.getElementById('menu-button');
+    const menu = document.getElementById('menu');
+    const defaultFont = '"Cloister Black", "Old English Text MT", serif';
+    const defaultSound = 'positive.wav';
+    const defaultMode = 'dark';
+    function setMode(value) {
+      const mode = value === 'light' ? 'light' : defaultMode;
+      document.body.classList.toggle('light-mode', mode === 'light');
+      localStorage.setItem('codexMode', mode);
+    }
+    document.querySelectorAll('input[name="mode"]').forEach(input => {
+      input.checked = input.value === (localStorage.getItem('codexMode') || defaultMode);
+      input.addEventListener('change', () => setMode(input.value));
+    });
+    function setFont(value) { document.body.style.fontFamily = value || defaultFont; localStorage.setItem('codexFont', value || defaultFont); }
+    document.querySelectorAll('input[name="font"]').forEach(input => {
+      input.checked = input.value === (localStorage.getItem('codexFont') || defaultFont);
+      input.addEventListener('change', () => setFont(input.value));
+    });
+    const soundInputs = [...document.querySelectorAll('input[name="sound"]')];
+    const availableSounds = new Set(soundInputs.map(input => input.value));
+    let selectedSound = localStorage.getItem('codexSound');
+    if (!availableSounds.has(selectedSound)) {
+      selectedSound = defaultSound;
+      settings.codexSound = selectedSound;
+    }
+    soundInputs.forEach(input => {
+      input.checked = input.value === selectedSound;
+      input.addEventListener('change', () => localStorage.setItem('codexSound', input.value));
+    });
+    menuButton.addEventListener('click', () => {
+      const open = menu.hidden;
+      menu.hidden = !open; menuButton.setAttribute('aria-expanded', String(open));
+    });
+    let activeAudio;
+    function playSound(name) {
+      if (!availableSounds.has(name)) name = defaultSound;
+      if (activeAudio) activeAudio.pause();
+      activeAudio = new Audio(soundBase + encodeURIComponent(name));
+      activeAudio.play().catch(() => api.postMessage({type:'audioError'}));
+    }
+    document.querySelectorAll('.preview').forEach(button => button.addEventListener('click', () => playSound(button.dataset.sound)));
+    let previousWorking = false;
+    document.body.classList.add('ready');
+    window.addEventListener('message', event => {
+      const status = event.data;
+      if (status?.type !== 'status' || !['ready','working','done'].includes(status.state)) return;
+      if (status.preferences) {
+        settings = {...status.preferences};
+        api.setState(settings);
+        document.body.classList.toggle('light-mode', settings.codexMode === 'light');
+        const fonts = [...document.querySelectorAll('input[name="font"]')];
+        const font = fonts.some(input => input.value === settings.codexFont) ? settings.codexFont : defaultFont;
+        document.body.style.fontFamily = font;
+        document.querySelectorAll('input[name="mode"]').forEach(input => input.checked = input.value === (settings.codexMode || defaultMode));
+        fonts.forEach(input => input.checked = input.value === font);
+        soundInputs.forEach(input => input.checked = input.value === (availableSounds.has(settings.codexSound) ? settings.codexSound : defaultSound));
+      }
+      const working = status.state === 'working';
+      document.body.classList.toggle('ready', status.state === 'ready');
+      document.body.classList.toggle('working', working);
+      if (working) document.body.classList.remove('done-flash');
+      if (status.completed) {
+        document.body.classList.remove('done-flash');
+        void document.body.offsetWidth;
+        document.body.classList.add('done-flash');
+        playSound(settings.codexSound || defaultSound);
+      }
+      previousWorking = working;
+      label.textContent = working ? 'Working...' : status.state === 'done' ? 'Done' : 'Ready';
+    });
+    api.postMessage({type:'ready'});
+  </script>
+</body>
+</html>
