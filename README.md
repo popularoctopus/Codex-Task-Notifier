@@ -29,7 +29,7 @@ No task content, credentials, machine-specific paths, old server scripts, or gen
 VSIX files are committed. Code is covered by the repository's [MIT license](LICENSE).
 See [asset notices](vscode-extension/THIRD_PARTY_NOTICES.md) for the supplied sounds.
 
-Version 0.2.0 is a distribution candidate, not a Marketplace release. Automated tests
+Version 0.2.2 is a distribution candidate, not a Marketplace release. Automated tests
 and package installation were checked on Windows. Real macOS/Linux runtime and sound
 validation, publisher setup, and sound redistribution confirmation remain before
 public Marketplace release. See the extension README for details and limitations.
