@@ -5,6 +5,10 @@ provided by the project owner. Their original authors and redistribution license
 have not been supplied. The files are included for the owner's local testing;
 confirm distribution permission and add required attribution before public release.
 
+Magic and Scifi were converted from 24-bit extensible PCM to standard 16-bit PCM WAV
+for Windows SoundPlayer compatibility. Their sample rate, channel count, and duration
+are unchanged.
+
 Font names reference fonts installed by the user. No font files or Windows system
 audio files are bundled. Code uses the repository's MIT license, included as LICENSE.
 This document does not establish redistribution rights for third-party sound assets.

@@ -1,6 +1,11 @@
 'use strict';
 class TaskState {
   constructor() { this.sources = new Map(); this.state = 'ready'; }
+  reset() {
+    if (this.state !== 'done') return false;
+    this.state = 'ready';
+    return true;
+  }
   accept(source, value) {
     if (!value || !['working', 'done'].includes(value.state) ||
         typeof value.updatedAt !== 'string' || !value.updatedAt.length || value.updatedAt.length > 128) return null;

@@ -13,6 +13,7 @@
     body.light-mode { --done-bg: #000; --done-text: #fff; --working-bg: #fff; --working-text: #000; }
     body.ready { background: var(--working-bg); color: var(--working-text); }
     body.working { background: var(--working-bg); color: var(--working-text); }
+    body.done { cursor: pointer; }
     body.done-flash { animation: done-flash 400ms steps(1, end) 3; }
     @keyframes done-flash {
       0%, 100% { background: var(--done-bg); color: var(--done-text); }
@@ -22,7 +23,7 @@
     #menu-button { position: fixed; top: 1rem; right: 1rem; z-index: 2; width: 3rem; height: 3rem;
       border: 1px solid currentColor; border-radius: .35rem; background: transparent; color: inherit;
       cursor: pointer; font-size: 1.7rem; line-height: 1; }
-    #menu-button:focus-visible, input:focus-visible, .preview:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+    #menu-button:focus-visible, input:focus-visible, .preview:focus-visible, .setup-button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
     #menu { position: fixed; top: 5rem; right: 1rem; z-index: 2; width: min(19rem, calc(100vw - 2rem));
       max-height: calc(100vh - 6rem); overflow: auto; padding: 1rem; border: 1px solid currentColor;
       background: Canvas; color: CanvasText; box-shadow: 0 .5rem 2rem #0005; }
@@ -34,6 +35,11 @@
       font-family: Arial, sans-serif;
     }
     .preview { margin-left: auto; border: 1px solid currentColor; border-radius: .2rem; background: transparent; color: inherit; cursor: pointer; }
+    .support-link { display: block; margin-top: .25rem; font-family: Arial, sans-serif; color: inherit; text-align: center; text-decoration: none; }
+    .support-label { text-decoration: underline; }
+    .support-heart { font-size: 1.15em; margin-left: .2em; }
+    .setup-button { display: block; width: 100%; margin-top: .75rem; padding: .45rem; border: 1px solid currentColor; border-radius: .2rem; background: transparent; color: inherit; cursor: pointer; font-family: Arial, sans-serif; }
+    .setup-button[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -59,7 +65,10 @@
       <label><input type="radio" name="sound" value="scifi.wav">Scifi <button class="preview" type="button" data-sound="scifi.wav">Play</button></label>
       <label><input type="radio" name="sound" value="positive.wav">Positive <button class="preview" type="button" data-sound="positive.wav">Play</button></label>
       <label><input type="radio" name="sound" value="software.wav">Software <button class="preview" type="button" data-sound="software.wav">Play</button></label>
+      <button id="enable-sounds" class="setup-button" type="button" hidden title="Play the selected sound to enable completion sounds. Repeat after closing or refreshing the board.">Enable sounds</button>
     </fieldset>
+    <button id="setup-instructions" class="setup-button" type="button">Codex setup instructions</button>
+    <a class="support-link" href="https://ko-fi.com/popularoctopus" target="_blank" rel="noopener noreferrer"><span class="support-label">Donate</span> <span class="support-heart" aria-hidden="true">&#9829;</span></a>
   </aside>
   <main id="status" role="status" aria-live="polite">Ready</main>
   <script>
@@ -79,6 +88,7 @@
     const defaultFont = '"Cloister Black", "Old English Text MT", serif';
     const defaultSound = 'positive.wav';
     const defaultMode = 'dark';
+    let currentState = 'ready';
     function setMode(value) {
       const mode = value === 'light' ? 'light' : defaultMode;
       document.body.classList.toggle('light-mode', mode === 'light');
@@ -108,15 +118,38 @@
       const open = menu.hidden;
       menu.hidden = !open; menuButton.setAttribute('aria-expanded', String(open));
     });
-    let activeAudio;
+    document.body.addEventListener('click', event => {
+      if (!menu.hidden && !menu.contains(event.target) && !menuButton.contains(event.target)) {
+        menu.hidden = true;
+        menuButton.setAttribute('aria-expanded', 'false');
+      }
+      if (currentState === 'done') api.postMessage({type:'reset'});
+    });
+    // Keep the same player that Enable sounds or a preview unlocks with a click.
+    const activeAudio = nativeAudio ? undefined : new Audio();
+    let playbackRequest = 0;
     function playSound(name) {
       if (!availableSounds.has(name)) name = defaultSound;
-      if (activeAudio) activeAudio.pause();
-      activeAudio = new Audio(soundBase + encodeURIComponent(name));
-      activeAudio.play().catch(() => api.postMessage({type:'audioError'}));
+      if (nativeAudio) {
+        api.postMessage({type:'playSound', sound:name});
+        return;
+      }
+      const request = ++playbackRequest;
+      activeAudio.pause();
+      const source = soundBase + encodeURIComponent(name);
+      if (activeAudio.src !== source) activeAudio.src = source;
+      activeAudio.currentTime = 0;
+      activeAudio.play().catch(error => {
+        // A newer preview/completion intentionally interrupts the previous request.
+        if (request !== playbackRequest || error.name === 'AbortError') return;
+        api.postMessage({type:'audioError', name:error.name, message:error.message, sound:name});
+      });
     }
     document.querySelectorAll('.preview').forEach(button => button.addEventListener('click', () => playSound(button.dataset.sound)));
-    let previousWorking = false;
+    const enableSounds = document.getElementById('enable-sounds');
+    enableSounds.hidden = nativeAudio;
+    if (!nativeAudio) enableSounds.addEventListener('click', () => playSound(settings.codexSound || defaultSound));
+    document.getElementById('setup-instructions').addEventListener('click', () => api.postMessage({type:'instructions'}));
     document.body.classList.add('ready');
     window.addEventListener('message', event => {
       const status = event.data;
@@ -132,17 +165,19 @@
         fonts.forEach(input => input.checked = input.value === font);
         soundInputs.forEach(input => input.checked = input.value === (availableSounds.has(settings.codexSound) ? settings.codexSound : defaultSound));
       }
+      currentState = status.state;
+      document.body.title = currentState === 'done' ? 'Click to reset.' : '';
+      document.body.classList.toggle('done', currentState === 'done');
       const working = status.state === 'working';
       document.body.classList.toggle('ready', status.state === 'ready');
       document.body.classList.toggle('working', working);
-      if (working) document.body.classList.remove('done-flash');
+      if (status.state !== 'done') document.body.classList.remove('done-flash');
       if (status.completed) {
         document.body.classList.remove('done-flash');
         void document.body.offsetWidth;
         document.body.classList.add('done-flash');
-        playSound(settings.codexSound || defaultSound);
+        if (!nativeAudio) playSound(settings.codexSound || defaultSound);
       }
-      previousWorking = working;
       label.textContent = working ? 'Working...' : status.state === 'done' ? 'Done' : 'Ready';
     });
     api.postMessage({type:'ready'});

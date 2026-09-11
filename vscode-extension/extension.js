@@ -2,6 +2,7 @@
 const vscode = require('vscode');
 const { randomBytes } = require('crypto');
 const { TaskState } = require('./state');
+const { WindowsAudioPlayer } = require('./windows-audio');
 const STATUS_FILE = '.codex-task-status.json';
 
 function activate(context) {
@@ -10,6 +11,16 @@ function activate(context) {
   let preferences = context.globalState.get('preferences', {});
   const config = key => vscode.workspace.getConfiguration('codexTaskNotifier').get(key);
   const output = vscode.window.createOutputChannel('Codex Task Notifier');
+  const nativeAudio = process.platform === 'win32'
+    ? new WindowsAudioPlayer(vscode.Uri.joinPath(context.extensionUri, 'sounds').fsPath) : undefined;
+  function playNativeSound(sound) {
+    if (stopped || !nativeAudio) return;
+    void nativeAudio.play(sound).catch(error => {
+      if (stopped) return;
+      output.appendLine(`Windows audio playback failed: ${error.message}`);
+      void vscode.window.showWarningMessage('Codex Task Notifier could not play the Windows sound. See the Codex Task Notifier Output channel for details.');
+    });
+  }
   const lastErrors = new Map();
   function send(extra = {}) {
     return panel?.webview.postMessage({ type: 'status', state: state.state, preferences, ...extra });
@@ -27,6 +38,9 @@ function activate(context) {
     current.onDidDispose(() => { if (panel === current) panel = undefined; });
     current.webview.onDidReceiveMessage(message => {
       if (message?.type === 'ready') send();
+      if (message?.type === 'reset' && state.reset()) send();
+      if (message?.type === 'instructions') void instructions();
+      if (message?.type === 'playSound') playNativeSound(message.sound);
       if (message?.type === 'preferences' && message.values && typeof message.values === 'object') {
         const clean = {};
         for (const key of ['codexMode','codexFont','codexSound']) {
@@ -36,7 +50,14 @@ function activate(context) {
         void context.globalState.update('preferences', clean);
       }
       if (message?.type === 'audioError') {
-        void vscode.window.showWarningMessage('Codex Task Notifier could not play audio. Open the board and click Play to enable or test sound.');
+        const detail = ['sound','name','message'].map(key =>
+          typeof message[key] === 'string' ? message[key].replace(/[\r\n]/g, ' ').slice(0, 500) : '').filter(Boolean).join(': ');
+        output.appendLine(`Audio playback failed: ${detail || 'Unknown error'}`);
+        if (message.name === 'NotAllowedError') {
+          void vscode.window.showWarningMessage('Codex Task Notifier: click Enable sounds in the board settings to enable completion sounds. Repeat after closing or refreshing the board.');
+        } else {
+          void vscode.window.showWarningMessage('Codex Task Notifier could not play audio. See the Codex Task Notifier Output channel for details.');
+        }
       }
     });
     await render();
@@ -49,15 +70,19 @@ function activate(context) {
     const soundBase = current.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'sounds')).toString();
     let html = Buffer.from(bytes).toString('utf8');
     html = html.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; media-src ${current.webview.cspSource}; script-src 'nonce-${nonce}';">`);
-    html = html.replace('<script>', `<script nonce="${nonce}">\nconst soundBase = ${JSON.stringify(soundBase + '/')};`);
+    html = html.replace('<script>', `<script nonce="${nonce}">\nconst nativeAudio = ${Boolean(nativeAudio)};\nconst soundBase = ${JSON.stringify(soundBase + '/')};`);
     current.webview.html = html;
   }
   async function apply(source, value) {
     const change = state.accept(source, value);
     if (!change) return;
     if (change.starts && config('autoOpen')) pendingOpen = true;
-    if (pendingOpen && vscode.window.state.focused) { pendingOpen = false; await show(); }
-    if (change.state === 'done') pendingOpen = false;
+    if (pendingOpen) {
+      pendingOpen = false;
+      try { await show(); }
+      catch (error) { pendingOpen = true; throw error; }
+    }
+    if (change.finishes) playNativeSound(preferences.codexSound);
     send({ completed: change.finishes });
     if (change.finishes && config('notifications')) {
       void vscode.window.showInformationMessage('Codex task completed.', 'Open board').then(choice => {
@@ -91,25 +116,34 @@ function activate(context) {
   }
   async function instructions() {
     const document = await vscode.workspace.openTextDocument({ language: 'markdown', content:
-`# Codex Task Notifier setup
+`# Paste this into Codex
 
-Add the following block to your workspace root AGENTS.md. Review existing notifier
-instructions and replace the old status-script block to avoid duplicate notifications.
-This command does not modify your instructions automatically. Start a new Codex task
-after saving. In a multi-root workspace, add the block to each project using the notifier.
-Optionally ignore ${STATUS_FILE} in Git.
+Set up Codex Task Notifier once for all my workspaces using global Codex instructions.
+Use AGENTS.md in the active Codex home directory (CODEX_HOME when set, otherwise
+~/.codex). Create it if needed, preserve unrelated instructions, and replace old
+notifier rules. If AGENTS.override.md takes precedence there, update its notifier
+rules too so the global rules are effective without changing unrelated instructions.
+Do not add notifier rules to workspace AGENTS.md files. Check the current workspace's
+applicable instruction files for old notifier rules and remove only those blocks.
 
-## Codex Task Notifier
-
-Before substantive work, write ${STATUS_FILE} in this workspace root as JSON:
+Add these global rules: Resolve the current task's workspace root from the current
+environment for each task. Never hard-code the setup workspace or reuse a path from
+an earlier task. If no workspace root is available, skip the status update and report
+that briefly.
+Before substantive work, write ${STATUS_FILE} in that workspace root as JSON:
 {"state":"working","updatedAt":"<new unique timestamp or task identifier>"}
-Only when all requested work and validation are complete, immediately before the final
-response, write the same file with state "done" and a new unique updatedAt string.
-Never mark unfinished, blocked, or interrupted work done. Use normal file tools;
-no shell, PowerShell, Python, server, or platform-specific path is required.
-Only the primary agent writes this file. Keep task content and personal data out of it.
-The file represents one task stream per workspace root; concurrent tasks in the same
-root are last-writer-wins. These instructions do not override sandbox permissions.
+Only after all requested work and validation are complete, immediately before the
+final response, write the same file with state "done" and a new unique updatedAt.
+Never mark unfinished, blocked, or interrupted work done. Only the primary agent
+updates the file, using ordinary file tools. Keep task content and personal data
+out of it. If a status update fails, report it briefly and continue authorized work.
+Respect existing sandbox permissions and approval requirements.
+
+Include in the global rules: In each Git workspace, ensure ${STATUS_FILE} is
+ignored in the workspace root .gitignore without duplicating an existing matching rule.
+
+Validate the setup and report which global instruction files were updated. Remind me
+to start a new Codex session in other workspaces so they load the global rules.
 ` });
     await vscode.window.showTextDocument(document);
   }
@@ -128,7 +162,7 @@ root are last-writer-wins. These instructions do not override sandbox permission
     vscode.window.onDidChangeWindowState(event => {
       if (event.focused && pendingOpen) { pendingOpen = false; void show(); }
     }),
-    {dispose() { stopped = true; clearTimeout(timer); panel?.dispose(); }}
+    {dispose() { stopped = true; clearTimeout(timer); nativeAudio?.dispose(); panel?.dispose(); }}
   );
   void poll();
 }

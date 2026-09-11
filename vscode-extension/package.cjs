@@ -19,10 +19,10 @@ add('extension.vsixmanifest', `<?xml version="1.0" encoding="utf-8"?>
 <Identity Language="en-US" Id="${escape(manifest.name)}" Version="${escape(manifest.version)}" Publisher="${escape(manifest.publisher)}"/>
 <DisplayName>${escape(manifest.displayName)}</DisplayName><Description xml:space="preserve">${escape(manifest.description)}</Description>
 <Categories>Other</Categories><Tags>codex,tasks,notifications</Tags><GalleryFlags>Public</GalleryFlags>
-<Properties><Property Id="Microsoft.VisualStudio.Code.Engine" Value="${escape(manifest.engines.vscode)}"/><Property Id="Microsoft.VisualStudio.Code.ExtensionKind" Value="workspace"/></Properties>
+<Properties><Property Id="Microsoft.VisualStudio.Code.Engine" Value="${escape(manifest.engines.vscode)}"/><Property Id="Microsoft.VisualStudio.Code.ExtensionKind" Value="${escape(manifest.extensionKind.join(','))}"/></Properties>
 </Metadata><Installation><InstallationTarget Id="Microsoft.VisualStudio.Code"/></Installation><Dependencies/>
 <Assets><Asset Type="Microsoft.VisualStudio.Code.Manifest" Path="extension/package.json" Addressable="true"/><Asset Type="Microsoft.VisualStudio.Services.Content.Details" Path="extension/README.md" Addressable="true"/><Asset Type="Microsoft.VisualStudio.Services.Content.Changelog" Path="extension/CHANGELOG.md" Addressable="true"/></Assets></PackageManifest>`);
-add('[Content_Types].xml', `<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">${Object.entries({json:'application/json',js:'application/javascript',html:'text/html',md:'text/markdown',wav:'audio/wav',vsixmanifest:'text/xml'}).map(([ext,type]) => `<Default Extension="${ext}" ContentType="${type}"/>`).join('')}</Types>`);
+add('[Content_Types].xml', `<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">${Object.entries({json:'application/json',js:'application/javascript',html:'text/html',md:'text/markdown',wav:'audio/wav',png:'image/png',vsixmanifest:'text/xml'}).map(([ext,type]) => `<Default Extension="${ext}" ContentType="${type}"/>`).join('')}</Types>`);
 function crc32(bytes) {
   let crc = 0xffffffff;
   for (const byte of bytes) {

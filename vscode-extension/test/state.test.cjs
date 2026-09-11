@@ -11,6 +11,15 @@ test('stored Done stays Ready; completion fires exactly once', () => {
   assert.equal(state.state,'done');
   assert.equal(state.accept('a',{state:'done',updatedAt:'2'}),null);
 });
+test('Done can be reset to Ready without losing source history', () => {
+  const state = new TaskState();
+  state.accept('a',{state:'working',updatedAt:'1'});
+  state.accept('a',{state:'done',updatedAt:'2'});
+  assert.equal(state.reset(),true);
+  assert.equal(state.state,'ready');
+  assert.equal(state.reset(),false);
+  assert.equal(state.accept('a',{state:'working',updatedAt:'3'}).starts,true);
+});
 test('multi-root task completion cannot hide another active task', () => {
   const state = new TaskState();
   state.accept('a',{state:'working',updatedAt:'1'});
