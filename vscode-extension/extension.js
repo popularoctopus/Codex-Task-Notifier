@@ -3,7 +3,10 @@ const vscode = require('vscode');
 const { randomBytes } = require('crypto');
 const { TaskState } = require('./state');
 const { createAudioPlayer } = require('./native-audio');
-const STATUS_FILE = '.codex-task-status.json';
+const path = require('node:path');
+const os = require('node:os');
+const { CodexLogDetector, CodexLogReader } = require('./codex-log');
+const { CodexEditMonitor } = require('./codex-edits');
 
 function activate(context) {
   const state = new TaskState();
@@ -20,7 +23,18 @@ function activate(context) {
       void vscode.window.showWarningMessage('Codex Task Notifier could not play the notification sound. See the Codex Task Notifier Output channel for details.');
     });
   }
-  const lastErrors = new Map();
+  let lastError;
+  let eventQueue = Promise.resolve();
+  const detector = new CodexLogDetector((source, value) => {
+    eventQueue = eventQueue.then(() => stopped ? undefined : apply(source, value)).catch(error => {
+      output.appendLine(`Notification failed: ${error.message}`);
+    });
+  }, { heuristic: config('detectionMode') !== 'conservative',
+    minimumMs: (Number.isFinite(config('minimumActivitySeconds')) ? config('minimumActivitySeconds') : 10) * 1000 });
+  const logPath = config('codexLogPath') || path.join(path.dirname(context.logUri.fsPath), 'openai.chatgpt', 'Codex.log');
+  const reader = new CodexLogReader(logPath, detector);
+  const editMonitor = config('detectFileEdits') === false ? undefined : new CodexEditMonitor(
+    path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'sessions'), detector);
   function send(extra = {}) {
     return panel?.webview.postMessage({ type: 'status', state: state.state, preferences, ...extra });
   }
@@ -38,7 +52,6 @@ function activate(context) {
     current.webview.onDidReceiveMessage(message => {
       if (message?.type === 'ready') send();
       if (message?.type === 'reset' && state.reset()) send();
-      if (message?.type === 'instructions') void instructions();
       if (message?.type === 'playSound') playNativeSound(message.sound);
       if (message?.type === 'preferences' && message.values && typeof message.values === 'object') {
         const clean = {};
@@ -75,6 +88,7 @@ function activate(context) {
   async function apply(source, value) {
     const change = state.accept(source, value);
     if (!change) return;
+    output.appendLine(change.finishes ? 'Codex completion detected.' : change.starts ? 'Codex turn started.' : 'Codex tracking reset without completion.');
     if (change.starts && config('autoOpen')) pendingOpen = true;
     if (pendingOpen) {
       pendingOpen = false;
@@ -93,63 +107,17 @@ function activate(context) {
     if (stopped || busy) return;
     busy = true;
     try {
-      const uris = (vscode.workspace.workspaceFolders || []).map(folder => vscode.Uri.joinPath(folder.uri, STATUS_FILE));
-      const legacy = config('legacyStatusFile');
-      if (legacy) uris.push(vscode.Uri.file(legacy));
-      for (const uri of uris) {
-        const key = uri.toString();
-        try {
-          const stat = await vscode.workspace.fs.stat(uri);
-          if (stat.size > 16384) throw new Error('Status file exceeds 16 KB');
-          const value = JSON.parse(Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8').replace(/^\uFEFF/, ''));
-          if (!stopped) await apply(key, value);
-          lastErrors.delete(key);
-        } catch (error) {
-          if (error.code !== 'FileNotFound' && lastErrors.get(key) !== error.message) {
-            output.appendLine(`Status read failed: ${error.message}`);
-            lastErrors.set(key, error.message);
-          }
-        }
-      }
+      await reader.poll();
+      await editMonitor?.poll();
+      lastError = undefined;
+    } catch (error) {
+      if (lastError !== error.message) output.appendLine(`Codex log read failed: ${error.message}`);
+      lastError = error.message;
     } finally { busy = false; if (!stopped) timer = setTimeout(poll, 500); }
-  }
-  async function instructions() {
-    const document = await vscode.workspace.openTextDocument({ language: 'markdown', content:
-`# Paste this into Codex
-
-Set up Codex Task Notifier once for all my workspaces using global Codex instructions.
-Use AGENTS.md in the active Codex home directory (CODEX_HOME when set, otherwise
-~/.codex). Create it if needed, preserve unrelated instructions, and replace old
-notifier rules. If AGENTS.override.md takes precedence there, update its notifier
-rules too so the global rules are effective without changing unrelated instructions.
-Do not add notifier rules to workspace AGENTS.md files. Check the current workspace's
-applicable instruction files for old notifier rules and remove only those blocks.
-
-Add these global rules: Resolve the current task's workspace root from the current
-environment for each task. Never hard-code the setup workspace or reuse a path from
-an earlier task. If no workspace root is available, skip the status update and report
-that briefly.
-Before substantive work, write ${STATUS_FILE} in that workspace root as JSON:
-{"state":"working","updatedAt":"<new unique timestamp or task identifier>"}
-Only after all requested work and validation are complete, immediately before the
-final response, write the same file with state "done" and a new unique updatedAt.
-Never mark unfinished, blocked, or interrupted work done. Only the primary agent
-updates the file, using ordinary file tools. Keep task content and personal data
-out of it. If a status update fails, report it briefly and continue authorized work.
-Respect existing sandbox permissions and approval requirements.
-
-Include in the global rules: In each Git workspace, ensure ${STATUS_FILE} is
-ignored in the workspace root .gitignore without duplicating an existing matching rule.
-
-Validate the setup and report which global instruction files were updated. Remind me
-to start a new Codex session in other workspaces so they load the global rules.
-` });
-    await vscode.window.showTextDocument(document);
   }
   context.subscriptions.push(output,
     vscode.commands.registerCommand('codexStatus.open', () => show()),
     vscode.commands.registerCommand('codexStatus.refresh', () => show(true)),
-    vscode.commands.registerCommand('codexStatus.instructions', instructions),
     vscode.commands.registerCommand('codexStatus.test', async () => {
       await show();
       await apply('manual-test', {state:'working', updatedAt:randomBytes(8).toString('hex')});
@@ -161,8 +129,9 @@ to start a new Codex session in other workspaces so they load the global rules.
     vscode.window.onDidChangeWindowState(event => {
       if (event.focused && pendingOpen) { pendingOpen = false; void show(); }
     }),
-    {dispose() { stopped = true; clearTimeout(timer); nativeAudio?.dispose(); panel?.dispose(); }}
+    {dispose() { stopped = true; clearTimeout(timer); detector.dispose(); nativeAudio?.dispose(); panel?.dispose(); }}
   );
+  output.appendLine('Automatic Codex log detection active. Existing history is skipped. Reload the window after changing detection settings.');
   void poll();
 }
 module.exports = { activate };

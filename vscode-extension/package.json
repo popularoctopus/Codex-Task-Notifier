@@ -2,32 +2,109 @@
   "name": "codex-status-board",
   "displayName": "Codex Task Notifier",
   "description": "Get notified when Codex tasks complete, with highly visible and audio alerts.",
-  "version": "0.2.24",
+  "version": "0.3.2",
   "icon": "icon.png",
   "publisher": "local-tools",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/popularoctopus/Codex-Task-Notifier.git", "directory": "vscode-extension" },
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Other"],
-  "keywords": ["codex", "tasks", "notifications"],
-  "extensionKind": ["ui"],
-  "activationEvents": ["onStartupFinished"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/popularoctopus/Codex-Task-Notifier.git",
+    "directory": "vscode-extension"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "codex",
+    "tasks",
+    "notifications"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./extension.js",
-  "scripts": { "test": "node --test test", "package": "node package.cjs" },
-  "files": ["extension.js", "state.js", "native-audio.js", "windows-audio.js", "index.html", "sounds", "images", "icons", "icon.png", "README.md", "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md"],
+  "scripts": {
+    "test": "node --test test",
+    "package": "node package.cjs"
+  },
+  "files": [
+    "extension.js",
+    "state.js",
+    "codex-log.js",
+    "codex-edits.js",
+    "native-audio.js",
+    "windows-audio.js",
+    "index.html",
+    "sounds",
+    "images",
+    "icons",
+    "icon.png",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
   "contributes": {
     "commands": [
-      {"command":"codexStatus.open","title":"Codex Task Notifier: Open Status Board"},
-      {"command":"codexStatus.refresh","title":"Codex Task Notifier: Refresh Status Board"},
-      {"command":"codexStatus.instructions","title":"Codex Task Notifier: Show Setup Instructions"},
-      {"command":"codexStatus.test","title":"Codex Task Notifier: Test Notification"}
+      {
+        "command": "codexStatus.open",
+        "title": "Codex Task Notifier: Open Status Board"
+      },
+      {
+        "command": "codexStatus.refresh",
+        "title": "Codex Task Notifier: Refresh Status Board"
+      },
+      {
+        "command": "codexStatus.test",
+        "title": "Codex Task Notifier: Test Notification"
+      }
     ],
     "configuration": {
-      "title":"Codex Task Notifier",
+      "title": "Codex Task Notifier",
       "properties": {
-        "codexTaskNotifier.autoOpen":{"type":"boolean","default":true,"description":"Open or select the board when a task starts."},
-        "codexTaskNotifier.notifications":{"type":"boolean","default":true,"description":"Show a VS Code notification when a task finishes."},
-        "codexTaskNotifier.legacyStatusFile":{"type":"string","default":"","scope":"machine","description":"Optional absolute path to a legacy status.json file. Leave empty for portable workspace status files."}
+        "codexTaskNotifier.minimumActivitySeconds": {
+          "type": "number",
+          "default": 10,
+          "minimum": 0,
+          "maximum": 300,
+          "description": "Keep quick turns quiet. Show Working and enable alerts after this many seconds of ongoing activity, or earlier for a detected edit. Set 0 for all turns. Reload the window after changing."
+        },
+        "codexTaskNotifier.detectFileEdits": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use matching local Codex session transcripts to recognize apply_patch calls and show Working before the activity threshold. No transcript content is transmitted. Reload the window after changing."
+        },
+        "codexTaskNotifier.autoOpen": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open or select the board when a task starts."
+        },
+        "codexTaskNotifier.notifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a VS Code notification when a task finishes."
+        },
+        "codexTaskNotifier.detectionMode": {
+          "type": "string",
+          "enum": [
+            "automatic",
+            "conservative"
+          ],
+          "default": "automatic",
+          "description": "Automatic includes chat completion inferred from read-state logs. Conservative requires a turn-diff completion marker. Reload the window after changing."
+        },
+        "codexTaskNotifier.codexLogPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Optional absolute Codex.log path for a different extension host. Normally detected automatically. Reload the window after changing."
+        }
       }
     }
   }

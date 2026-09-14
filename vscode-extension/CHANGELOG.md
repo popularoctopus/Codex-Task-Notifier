@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.2
+
+- Keep quick chats quiet: defer Working and suppress alerts for turns below a configurable 10-second activity threshold.
+- Qualify editing turns early using apply_patch calls from matching local session transcripts, with an opt-out setting.
+- Exclude completion-settling time from qualification and preserve immediate approval-pause resumption once a turn qualifies.
+- Add coverage for short/long turns, edit qualification, delayed transcript reads, and timer cleanup.
+
+## 0.3.1
+
+- Return to Working when new reasoning resumes in a turn already marked Done, including after an approval pause.
+- Allow a fresh Done alert after resumed work completes, without suppressing closely spaced notifications.
+- Ignore repeated reasoning item IDs and mismatched turn IDs when reopening a turn.
+
+## 0.3.0
+
+- Detect Codex starts and completions from local logs without a setup prompt or agent-written status files.
+- Track turns without a duration cutoff or global alert cooldown; deduplicate per turn.
+- Handle incremental reads, partial records, rotation and truncation; skip history at activation.
+- Add automatic/conservative detection modes and a log path override.
+- Remove the instruction setup command and button. Preserve native audio and appearance settings.
+- Ignore ambiguous concurrent events; private log formats and chat inference remain limitations.
+
 ## 0.2.24
 
 - Play completion sounds and previews natively on macOS with afplay, and on Linux with pw-play, paplay, or aplay.

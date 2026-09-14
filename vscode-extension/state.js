@@ -7,9 +7,14 @@ class TaskState {
     return true;
   }
   accept(source, value) {
-    if (!value || !['working', 'done'].includes(value.state) ||
+    if (!value || !['working', 'done', 'cancelled'].includes(value.state) ||
         typeof value.updatedAt !== 'string' || !value.updatedAt.length || value.updatedAt.length > 128) return null;
     const old = this.sources.get(source);
+    if (value.state === 'cancelled') {
+      this.sources.delete(source);
+      this.state = [...this.sources.values()].some(s => s.state === 'working') ? 'working' : 'ready';
+      return { state: this.state, starts: false, finishes: false };
+    }
     if (old?.key === value.updatedAt && old.state === value.state) return null;
     const starts = value.state === 'working' && (old?.state !== 'working' || old.key !== value.updatedAt);
     const finishes = old?.state === 'working' && value.state === 'done';

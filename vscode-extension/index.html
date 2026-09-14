@@ -67,7 +67,6 @@
       <label><input type="radio" name="sound" value="software.wav">Software <button class="preview" type="button" data-sound="software.wav">Play</button></label>
       <button id="enable-sounds" class="setup-button" type="button" hidden title="Play the selected sound to enable completion sounds. Repeat after closing or refreshing the board.">Enable sounds</button>
     </fieldset>
-    <button id="setup-instructions" class="setup-button" type="button">Codex setup instructions</button>
     <a class="support-link" href="https://ko-fi.com/popularoctopus" target="_blank" rel="noopener noreferrer"><span class="support-label">Donate</span> <span class="support-heart" aria-hidden="true">&#9829;</span></a>
   </aside>
   <main id="status" role="status" aria-live="polite">Ready</main>
@@ -149,7 +148,6 @@
     const enableSounds = document.getElementById('enable-sounds');
     enableSounds.hidden = nativeAudio;
     if (!nativeAudio) enableSounds.addEventListener('click', () => playSound(settings.codexSound || defaultSound));
-    document.getElementById('setup-instructions').addEventListener('click', () => api.postMessage({type:'instructions'}));
     document.body.classList.add('ready');
     window.addEventListener('message', event => {
       const status = event.data;
