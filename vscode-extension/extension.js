@@ -81,7 +81,9 @@ function activate(context) {
     const nonce = randomBytes(16).toString('hex');
     const soundBase = current.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'sounds')).toString();
     let html = Buffer.from(bytes).toString('utf8');
-    html = html.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; media-src ${current.webview.cspSource}; script-src 'nonce-${nonce}';">`);
+    const fontUri = current.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'fonts/ManufacturingConsent-Regular.ttf')).toString();
+    html = html.replace('./fonts/ManufacturingConsent-Regular.ttf', fontUri);
+    html = html.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src ${current.webview.cspSource}; media-src ${current.webview.cspSource}; script-src 'nonce-${nonce}';">`);
     html = html.replace('<script>', `<script nonce="${nonce}">\nconst nativeAudio = ${Boolean(nativeAudio)};\nconst soundBase = ${JSON.stringify(soundBase + '/')};`);
     current.webview.html = html;
   }

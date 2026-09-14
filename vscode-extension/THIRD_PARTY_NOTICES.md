@@ -9,6 +9,11 @@ Magic and Scifi were converted from 24-bit extensible PCM to standard 16-bit PCM
 for Windows SoundPlayer compatibility. Their sample rate, channel count, and duration
 are unchanged.
 
-Font names reference fonts installed by the user. No font files or Windows system
-audio files are bundled. Code uses the repository's MIT license, included as LICENSE.
-This document does not establish redistribution rights for third-party sound assets.
+ManufacturingConsent-Regular.ttf is Manufacturing Consent from Google Fonts:
+https://fonts.google.com/specimen/Manufacturing+Consent
+It is distributed under the SIL Open Font License 1.1. Copyright notices and the
+license are included in fonts/ManufacturingConsent-OFL.txt.
+
+No Windows system audio files are bundled. Code uses the repository's MIT license,
+included as LICENSE. This document does not establish redistribution rights for
+third-party sound assets.

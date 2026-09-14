@@ -6,10 +6,18 @@
   <meta name="codex-status-board" content="v1">
   <title>Codex Task Notifier</title>
   <style>
+    @font-face {
+      font-family: "Manufacturing Consent";
+      src: url("./fonts/ManufacturingConsent-Regular.ttf") format("truetype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
     html, body { margin: 0; min-height: 100%; }
     body { --done-bg: #fff; --done-text: #000; --working-bg: #000; --working-text: #fff;
       min-height: 100vh; min-height: 100dvh; display: grid; place-items: center;
-      background: var(--done-bg); color: var(--done-text); font-family: "Cloister Black", "Old English Text MT", "Segoe UI", serif; }
+      background: var(--done-bg); color: var(--done-text); font-family: "Manufacturing Consent", "Old English Text MT", serif; }
+    body.blackletter #status { font-weight: 400; }
     body.light-mode { --done-bg: #000; --done-text: #fff; --working-bg: #fff; --working-text: #000; }
     body.ready { background: var(--working-bg); color: var(--working-text); }
     body.working { background: var(--working-bg); color: var(--working-text); }
@@ -32,13 +40,13 @@
     legend { padding: 0 .3rem; font-weight: 700; }
     label { display: flex; align-items: center; gap: .5rem; margin: .35rem 0; cursor: pointer; }
     #menu legend, #menu .theme-settings label, #menu .sound-settings label, #menu .sound-settings .preview {
-      font-family: Arial, sans-serif;
+      font-family: "Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif;
     }
     .preview { margin-left: auto; border: 1px solid currentColor; border-radius: .2rem; background: transparent; color: inherit; cursor: pointer; }
-    .support-link { display: block; margin-top: .25rem; font-family: Arial, sans-serif; color: inherit; text-align: center; text-decoration: none; }
+    .support-link { display: block; margin-top: .25rem; font-family: "Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif; color: inherit; text-align: center; text-decoration: none; }
     .support-label { text-decoration: underline; }
     .support-heart { font-size: 1.15em; margin-left: .2em; }
-    .setup-button { display: block; width: 100%; margin-top: .75rem; padding: .45rem; border: 1px solid currentColor; border-radius: .2rem; background: transparent; color: inherit; cursor: pointer; font-family: Arial, sans-serif; }
+    .setup-button { display: block; width: 100%; margin-top: .75rem; padding: .45rem; border: 1px solid currentColor; border-radius: .2rem; background: transparent; color: inherit; cursor: pointer; font-family: "Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif; }
     .setup-button[hidden] { display: none; }
   </style>
 </head>
@@ -50,13 +58,13 @@
       <label><input type="radio" name="mode" value="light">Light Mode</label>
     </fieldset>
     <fieldset><legend>Font</legend>
-      <label style="font-family: Arial, sans-serif"><input type="radio" name="font" value='Arial, sans-serif'>Arial</label>
-      <label style="font-family: Georgia, serif"><input type="radio" name="font" value='Georgia, serif'>Georgia</label>
-      <label style='font-family: "Times New Roman", serif'><input type="radio" name="font" value='"Times New Roman", serif'>Times New Roman</label>
-      <label style='font-family: "Courier New", monospace'><input type="radio" name="font" value='"Courier New", monospace'>Courier New</label>
-      <label style="font-family: Impact, sans-serif"><input type="radio" name="font" value='Impact, sans-serif'>Impact</label>
-      <label style="font-family: Pacifico, cursive"><input type="radio" name="font" value='Pacifico, cursive'>Pacifico</label>
-      <label style='font-family: "Cloister Black", "Old English Text MT", serif'><input type="radio" name="font" value='"Cloister Black", "Old English Text MT", serif'>Cloister Black</label>
+      <label style='font-family: "Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif'><input type="radio" name="font" value='"Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif' data-font-families='Arial|Helvetica Neue|Helvetica|Liberation Sans' data-fallback-label="Sans-serif"><span class="font-label">Arial</span></label>
+      <label style='font-family: "Georgia", "DejaVu Serif", "Liberation Serif", serif'><input type="radio" name="font" value='"Georgia", "DejaVu Serif", "Liberation Serif", serif' data-font-families='Georgia|DejaVu Serif|Liberation Serif' data-fallback-label="Serif"><span class="font-label">Georgia</span></label>
+      <label style='font-family: "Times New Roman", Times, "Liberation Serif", serif'><input type="radio" name="font" value='"Times New Roman", Times, "Liberation Serif", serif' data-font-families='Times New Roman|Times|Liberation Serif' data-fallback-label="Serif"><span class="font-label">Times New Roman</span></label>
+      <label style='font-family: "Courier New", Courier, "Liberation Mono", monospace'><input type="radio" name="font" value='"Courier New", Courier, "Liberation Mono", monospace' data-font-families='Courier New|Courier|Liberation Mono' data-fallback-label="Monospace"><span class="font-label">Courier New</span></label>
+      <label style='font-family: "Impact", "Arial Black", "Liberation Sans", sans-serif'><input type="radio" name="font" value='"Impact", "Arial Black", "Liberation Sans", sans-serif' data-font-families='Impact|Arial Black|Liberation Sans' data-fallback-label="Sans-serif"><span class="font-label">Impact</span></label>
+      <label style='font-family: "Pacifico", "Brush Script MT", "Segoe Script", "URW Chancery L", cursive'><input type="radio" name="font" value='"Pacifico", "Brush Script MT", "Segoe Script", "URW Chancery L", cursive' data-font-families='Pacifico|Brush Script MT|Segoe Script|URW Chancery L' data-fallback-label="Cursive"><span class="font-label">Pacifico</span></label>
+      <label style='font-family: "Manufacturing Consent", "Old English Text MT", serif'><input type="radio" name="font" value='"Manufacturing Consent", "Old English Text MT", serif' data-font-label="Blackletter"><span class="font-label">Blackletter</span></label>
     </fieldset>
     <fieldset class="sound-settings"><legend>Notification Sound</legend>
       <label><input type="radio" name="sound" value="magic.wav">Magic <button class="preview" type="button" data-sound="magic.wav">Play</button></label>
@@ -84,7 +92,7 @@
     const label = document.getElementById('status');
     const menuButton = document.getElementById('menu-button');
     const menu = document.getElementById('menu');
-    const defaultFont = '"Cloister Black", "Old English Text MT", serif';
+    const defaultFont = '"Manufacturing Consent", "Old English Text MT", serif';
     const defaultSound = 'positive.wav';
     const defaultMode = 'dark';
     let currentState = 'ready';
@@ -97,11 +105,43 @@
       input.checked = input.value === (localStorage.getItem('codexMode') || defaultMode);
       input.addEventListener('change', () => setMode(input.value));
     });
-    function setFont(value) { document.body.style.fontFamily = value || defaultFont; localStorage.setItem('codexFont', value || defaultFont); }
-    document.querySelectorAll('input[name="font"]').forEach(input => {
-      input.checked = input.value === (localStorage.getItem('codexFont') || defaultFont);
-      input.addEventListener('change', () => setFont(input.value));
-    });
+    const fontInputs = [...document.querySelectorAll('input[name="font"]')];
+    const availableFonts = new Set(fontInputs.map(input => input.value));
+    function setFont(value) {
+      const font = availableFonts.has(value) ? value : defaultFont;
+      document.body.style.fontFamily = font;
+      document.body.classList.toggle('blackletter', font === defaultFont);
+      localStorage.setItem('codexFont', font);
+      fontInputs.forEach(input => input.checked = input.value === font);
+    }
+    async function updateFontLabels() {
+      await Promise.all(fontInputs.map(async input => {
+        const label = input.parentElement?.querySelector('.font-label');
+        if (!label) return;
+        if (input.dataset.fontLabel) {
+          label.textContent = input.dataset.fontLabel;
+          return;
+        }
+        const families = (input.dataset.fontFamilies || '').split('|').filter(Boolean);
+        label.textContent = input.dataset.fallbackLabel || 'Font';
+        for (const family of families) {
+          try {
+            // check() alone returns true even for nonexistent system fonts.
+            await new FontFace('Notifier font probe', `local("${family}")`).load();
+            label.textContent = family;
+            return;
+          } catch { /* Try the next family, including when local fonts are unavailable. */ }
+        }
+      }));
+    }
+    const storedFont = localStorage.getItem('codexFont');
+    // Wait for host preferences before persisting; a new webview has no local state.
+    const initialFont = availableFonts.has(storedFont) ? storedFont : defaultFont;
+    document.body.style.fontFamily = initialFont;
+    document.body.classList.toggle('blackletter', initialFont === defaultFont);
+    fontInputs.forEach(input => input.checked = input.value === initialFont);
+    fontInputs.forEach(input => input.addEventListener('change', () => setFont(input.value)));
+    updateFontLabels();
     const soundInputs = [...document.querySelectorAll('input[name="sound"]')];
     const availableSounds = new Set(soundInputs.map(input => input.value));
     let selectedSound = localStorage.getItem('codexSound');
@@ -156,11 +196,11 @@
         settings = {...status.preferences};
         api.setState(settings);
         document.body.classList.toggle('light-mode', settings.codexMode === 'light');
-        const fonts = [...document.querySelectorAll('input[name="font"]')];
-        const font = fonts.some(input => input.value === settings.codexFont) ? settings.codexFont : defaultFont;
+        const font = availableFonts.has(settings.codexFont) ? settings.codexFont : defaultFont;
         document.body.style.fontFamily = font;
+        document.body.classList.toggle('blackletter', font === defaultFont);
         document.querySelectorAll('input[name="mode"]').forEach(input => input.checked = input.value === (settings.codexMode || defaultMode));
-        fonts.forEach(input => input.checked = input.value === font);
+        fontInputs.forEach(input => input.checked = input.value === font);
         soundInputs.forEach(input => input.checked = input.value === (availableSounds.has(settings.codexSound) ? settings.codexSound : defaultSound));
       }
       currentState = status.state;

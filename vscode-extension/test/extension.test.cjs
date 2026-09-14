@@ -6,6 +6,7 @@ const vm = require('node:vm');
 for (const platform of ['darwin','linux','win32']) test(`${platform}: completion, previews, closed board, errors, and disposal`, async () => {
   const commands={}, sent=[], notices=[], warnings=[], logs=[]; let next, emitLog, receive, created=0, autoOpen=true;
   const root = path.join(__dirname,'..');
+  let renderedHtml;
   const played=[]; let nativeDisposed=false, closePanel, nativeFailure;
   const uri = value => ({toString:()=>value,fsPath:value});
   const signal = async (state, updatedAt) => { emitLog('test-thread', {state, updatedAt}); await new Promise(resolve => setImmediate(resolve)); };
@@ -13,7 +14,7 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
     onDidChangeWindowState:()=>({dispose(){}}),
     showInformationMessage:async message=>{notices.push(message);},
     showWarningMessage:async message=>{warnings.push(message);},
-    createWebviewPanel(){created++; return {viewColumn:1,reveal(){},onDidDispose(fn){closePanel=fn;},dispose(){},webview:{cspSource:'vscode-resource:',asWebviewUri:u=>u,onDidReceiveMessage:fn=>{receive=fn;},postMessage:message=>{sent.push(message);},set html(value){assert(value.includes('Content-Security-Policy'));assert(value.includes('nonce='));assert(value.includes('const nativeAudio = true;'));}}};}
+    createWebviewPanel(){created++; return {viewColumn:1,reveal(){},onDidDispose(fn){closePanel=fn;},dispose(){},webview:{cspSource:'vscode-resource:',asWebviewUri:u=>uri('vscode-resource:/'+u),onDidReceiveMessage:fn=>{receive=fn;},postMessage:message=>{sent.push(message);},set html(value){renderedHtml=value;assert(value.includes('Content-Security-Policy'));assert(value.includes('nonce='));assert(value.includes('const nativeAudio = true;'));}}};}
   };
   const workspace={workspaceFolders:[{uri:uri('workspace')}],getConfiguration:()=>({get:key=>key==='codexLogPath'?'':key==='detectionMode'?'automatic':key==='autoOpen'?autoOpen:true}),fs:{
     async readFile(u){assert.equal(u.toString(),'extension/index.html');return fs.readFileSync(path.join(root,'index.html'));}
@@ -64,6 +65,9 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
   window.state.focused=false;
   await signal('working', '1');
   assert.equal(created,1); receive({type:'ready'}); assert.equal(sent.at(-1).state,'working');
+  assert.match(renderedHtml, /src: url\("vscode-resource:\/extension\/fonts\/ManufacturingConsent-Regular.ttf"\)/);
+  assert.match(renderedHtml, /font-src vscode-resource:/);
+  assert(!renderedHtml.includes('./fonts/'));
   await next(); assert.equal(notices.length,0);
   await signal('done', '2');
   assert.equal(sent.at(-1).completed,true); assert.equal(notices.length,1);

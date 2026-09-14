@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.3.9
+
+- Use hosted screenshot URLs on grgwtsn.com in the Details page.
+
+## 0.3.8
+
+- Simplify the Details page with functionality, installation, and Command Palette instructions.
+- Add Ready, Settings, Working, and Done screenshots and repository resources.
+
+## 0.3.7
+
+- Bundle Manufacturing Consent as the Blackletter font choice on all platforms.
+- Use its original regular weight and preserve the Blackletter label in settings.
+
+## 0.3.6
+
+- Load the bundled blackletter font through a VS Code webview resource URL on all platforms.
+- Resolve font labels after loading and detect missing local fonts correctly.
+- Preserve host appearance preferences when opening a fresh board.
+
+## 0.3.5
+
+- Use the updated bell artwork from the icons directory for the extension icon.
+
+## 0.3.4
+
+- Replace the serif substitute with bundled UnifrakturCook blackletter typography.
+- Permit the packaged font through the board webview's content security policy.
+
+## 0.3.3
+
+- Replace Cloister Black with a cross-platform Palatino font stack.
+- Add fallback stacks and platform-aware labels for all font choices.
+
 ## 0.3.2
 
 - Keep quick chats quiet: defer Working and suppress alerts for turns below a configurable 10-second activity threshold.
