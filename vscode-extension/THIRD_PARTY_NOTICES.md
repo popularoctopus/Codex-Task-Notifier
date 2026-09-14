@@ -1,11 +1,11 @@
 # Asset provenance and release decisions
 
-magic.wav, flute.wav, marimba.wav, scifi.wav, positive.wav, and software.wav were
+chime.wav, flute.wav, marimba.wav, scifi.wav, positive.wav, and software.wav were
 provided by the project owner. Their original authors and redistribution licenses
 have not been supplied. The files are included for the owner's local testing;
 confirm distribution permission and add required attribution before public release.
 
-Magic and Scifi were converted from 24-bit extensible PCM to standard 16-bit PCM WAV
+Scifi was converted from 24-bit extensible PCM to standard 16-bit PCM WAV
 for Windows SoundPlayer compatibility. Their sample rate, channel count, and duration
 are unchanged.
 

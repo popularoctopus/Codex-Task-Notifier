@@ -67,12 +67,12 @@
       <label style='font-family: "Manufacturing Consent", "Old English Text MT", serif'><input type="radio" name="font" value='"Manufacturing Consent", "Old English Text MT", serif' data-font-label="Blackletter"><span class="font-label">Blackletter</span></label>
     </fieldset>
     <fieldset class="sound-settings"><legend>Notification Sound</legend>
-      <label><input type="radio" name="sound" value="magic.wav">Magic <button class="preview" type="button" data-sound="magic.wav">Play</button></label>
+      <label><input type="radio" name="sound" value="chime.wav">Chime <button class="preview" type="button" data-sound="chime.wav">Play</button></label>
+      <label><input type="radio" name="sound" value="positive.wav">Positive <button class="preview" type="button" data-sound="positive.wav">Play</button></label>
+      <label><input type="radio" name="sound" value="software.wav">Software <button class="preview" type="button" data-sound="software.wav">Play</button></label>
       <label><input type="radio" name="sound" value="flute.wav">Flute <button class="preview" type="button" data-sound="flute.wav">Play</button></label>
       <label><input type="radio" name="sound" value="marimba.wav">Marimba <button class="preview" type="button" data-sound="marimba.wav">Play</button></label>
       <label><input type="radio" name="sound" value="scifi.wav">Scifi <button class="preview" type="button" data-sound="scifi.wav">Play</button></label>
-      <label><input type="radio" name="sound" value="positive.wav">Positive <button class="preview" type="button" data-sound="positive.wav">Play</button></label>
-      <label><input type="radio" name="sound" value="software.wav">Software <button class="preview" type="button" data-sound="software.wav">Play</button></label>
       <button id="enable-sounds" class="setup-button" type="button" hidden title="Play the selected sound to enable completion sounds. Repeat after closing or refreshing the board.">Enable sounds</button>
     </fieldset>
     <a class="support-link" href="https://ko-fi.com/popularoctopus" target="_blank" rel="noopener noreferrer"><span class="support-label">Donate</span> <span class="support-heart" aria-hidden="true">&#9829;</span></a>
@@ -92,8 +92,8 @@
     const label = document.getElementById('status');
     const menuButton = document.getElementById('menu-button');
     const menu = document.getElementById('menu');
-    const defaultFont = '"Manufacturing Consent", "Old English Text MT", serif';
-    const defaultSound = 'positive.wav';
+    const defaultFont = '"Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif';
+    const defaultSound = 'chime.wav';
     const defaultMode = 'dark';
     let currentState = 'ready';
     function setMode(value) {

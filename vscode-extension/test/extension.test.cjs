@@ -80,11 +80,11 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
   receive({type:'audioError',name:'NotAllowedError',message:'Gesture required',sound:'flute.wav'});
   assert.match(warnings.at(-1),/click Enable sounds/);
   assert.match(logs.at(-1),/flute.wav: NotAllowedError: Gesture required/);
-  receive({type:'audioError',name:'NotSupportedError',message:'Unsupported format',sound:'magic.wav'});
+  receive({type:'audioError',name:'NotSupportedError',message:'Unsupported format',sound:'chime.wav'});
   assert.match(warnings.at(-1),/Output channel/);
   assert.match(logs.at(-1),/NotSupportedError: Unsupported format/);
-  receive({type:'playSound',sound:'magic.wav'});
-  assert.equal(played.at(-1),'magic.wav');
+  receive({type:'playSound',sound:'chime.wav'});
+  assert.equal(played.at(-1),'chime.wav');
   receive({type:'preferences',values:{codexSound:'marimba.wav'}});
   closePanel(); window.state.focused=false; autoOpen=false;
   const sentBefore = sent.length;
@@ -92,7 +92,7 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
   await signal('done', '4');
   assert.equal(sent.length,sentBefore); assert.equal(created,1);
   assert.equal(notices.length,2);
-  assert.deepEqual(played,['flute.wav','magic.wav','marimba.wav']);
+  assert.deepEqual(played,['flute.wav','chime.wav','marimba.wav']);
   {
     nativeFailure=Error('Native player unavailable');
     await signal('working', '5');

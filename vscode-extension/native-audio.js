@@ -3,7 +3,7 @@ const { execFile } = require('node:child_process');
 const path = require('node:path');
 const { WindowsAudioPlayer } = require('./windows-audio');
 
-const SOUNDS = new Set(['magic.wav','flute.wav','marimba.wav','scifi.wav','positive.wav','software.wav']);
+const SOUNDS = new Set(['chime.wav','positive.wav','software.wav','flute.wav','marimba.wav','scifi.wav']);
 
 class PosixAudioPlayer {
   constructor(directory, platform) {
@@ -24,7 +24,7 @@ class PosixAudioPlayer {
   async play(name) {
     if (this.disposed) return false;
     this.stop();
-    const sound = SOUNDS.has(name) ? name : 'positive.wav';
+    const sound = SOUNDS.has(name) ? name : 'chime.wav';
     const filename = path.join(this.directory, sound);
     const request = { cancelled: false };
     this.active = request;

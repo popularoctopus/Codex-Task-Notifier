@@ -2,7 +2,7 @@
 const { execFile } = require('node:child_process');
 const path = require('node:path');
 
-const SOUNDS = new Set(['magic.wav','flute.wav','marimba.wav','scifi.wav','positive.wav','software.wav']);
+const SOUNDS = new Set(['chime.wav','positive.wav','software.wav','flute.wav','marimba.wav','scifi.wav']);
 // The script is fixed. Pass the allowlisted asset path as data, never as shell code.
 const SCRIPT = `
 $ErrorActionPreference = 'Stop'
@@ -35,7 +35,7 @@ class WindowsAudioPlayer {
   play(name) {
     if (this.disposed) return Promise.resolve(false);
     this.stop();
-    const sound = SOUNDS.has(name) ? name : 'positive.wav';
+    const sound = SOUNDS.has(name) ? name : 'chime.wav';
     const request = { cancelled: false };
     this.active = request;
     return new Promise((resolve, reject) => {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.10
+
+- Replace the Magic notification sound with Chime.
+- Set Chime, Arial, and dark mode as the first-install defaults.
+
 ## 0.3.9
 
 - Use hosted screenshot URLs on grgwtsn.com in the Details page.

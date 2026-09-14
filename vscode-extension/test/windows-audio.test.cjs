@@ -43,7 +43,7 @@ test('untrusted sound names cannot select files outside the bundled allowlist', 
   for(const sound of ['../../other.wav',"flute.wav'; exit 1",undefined,{}]) {
     const done=player.play(sound);
     const call=calls.at(-1);
-    assert.equal(call.options.env.CODEX_NOTIFIER_SOUND_FILE,path.win32.join(directory,'positive.wav'));
+    assert.equal(call.options.env.CODEX_NOTIFIER_SOUND_FILE,path.win32.join(directory,'chime.wav'));
     call.callback(null,'',''); await done;
   }
 });
@@ -51,7 +51,7 @@ test('untrusted sound names cannot select files outside the bundled allowlist', 
 test('new sounds and disposal cancel playback without false failures', async () => {
   const {player,calls}=fixture();
   const first=player.play('flute.wav');
-  const second=player.play('magic.wav');
+  const second=player.play('chime.wav');
   assert.equal(calls[0].killed,true);
   calls[0].callback(Error('terminated'),'',''); assert.equal(await first,false);
   player.dispose(); assert.equal(calls[1].killed,true);
@@ -63,14 +63,14 @@ test('new sounds and disposal cancel playback without false failures', async () 
 test('launch, timeout, and player failures are surfaced', async () => {
   const {player,calls}=fixture();
   for(const [error,stderr] of [[Error('ENOENT'),''],[Error('timeout'),''],[Error('exit 1'),'Invalid WAV header']]) {
-    const done=player.play('magic.wav');
+    const done=player.play('chime.wav');
     calls.at(-1).callback(error,'',stderr);
     await assert.rejects(done,new RegExp(stderr||error.message));
   }
 });
 
 test('all bundled sounds use PCM WAV headers supported by SoundPlayer', () => {
-  for(const name of ['magic.wav','flute.wav','marimba.wav','scifi.wav','positive.wav','software.wav']) {
+  for(const name of ['chime.wav','positive.wav','software.wav','flute.wav','marimba.wav','scifi.wav']) {
     const bytes=fs.readFileSync(path.join(__dirname,'../sounds',name));
     assert.equal(bytes.toString('ascii',0,4),'RIFF',name);
     assert.equal(bytes.toString('ascii',8,12),'WAVE',name);
@@ -92,7 +92,7 @@ test('Windows native audio smoke test: all bundled WAVs', {
   const {WindowsAudioPlayer}=require('../windows-audio');
   const player=new WindowsAudioPlayer(path.join(__dirname,'../sounds'));
   try {
-    for(const sound of ['magic.wav','flute.wav','marimba.wav','scifi.wav','positive.wav','software.wav']) {
+    for(const sound of ['chime.wav','positive.wav','software.wav','flute.wav','marimba.wav','scifi.wav']) {
       assert.equal(await player.play(sound),true,sound);
     }
   } finally { player.dispose(); }

@@ -8,10 +8,21 @@ const os = require('node:os');
 const { CodexLogDetector, CodexLogReader } = require('./codex-log');
 const { CodexEditMonitor } = require('./codex-edits');
 
+const DEFAULT_PREFERENCES = {
+  codexMode: 'dark',
+  codexFont: '"Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif',
+  codexSound: 'chime.wav'
+};
+
 function activate(context) {
   const state = new TaskState();
   let panel, timer, stopped = false, busy = false, pendingOpen = false;
-  let preferences = context.globalState.get('preferences', {});
+  const storedPreferences = context.globalState.get('preferences', {});
+  let preferences = {
+    ...DEFAULT_PREFERENCES,
+    ...(storedPreferences && typeof storedPreferences === 'object' ? storedPreferences : {})
+  };
+  if (preferences.codexSound === 'magic.wav') preferences.codexSound = DEFAULT_PREFERENCES.codexSound;
   const config = key => vscode.workspace.getConfiguration('codexTaskNotifier').get(key);
   const output = vscode.window.createOutputChannel('Codex Task Notifier');
   const nativeAudio = createAudioPlayer(vscode.Uri.joinPath(context.extensionUri, 'sounds').fsPath);

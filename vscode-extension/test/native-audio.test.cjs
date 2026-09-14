@@ -33,11 +33,11 @@ test('factory preserves the Windows backend and only supports native desktop pla
 
 for (const platform of ['darwin','linux']) test(`${platform}: safe native invocation and all bundled sound selections`, async () => {
   const {player,calls,directory} = fixture(platform);
-  for (const sound of ['magic.wav','flute.wav','marimba.wav','scifi.wav','positive.wav','software.wav',undefined,'../../other.wav',{},'-bad.wav']) {
+  for (const sound of ['chime.wav','positive.wav','software.wav','flute.wav','marimba.wav','scifi.wav',undefined,'../../other.wav',{},'-bad.wav']) {
     const done = player.play(sound);
     const call = calls.at(-1);
     assert.equal(call.command,platform === 'darwin' ? '/usr/bin/afplay' : 'pw-play');
-    const expected = typeof sound === 'string' && !sound.includes('/') && !sound.startsWith('-') ? sound : 'positive.wav';
+    const expected = typeof sound === 'string' && !sound.includes('/') && !sound.startsWith('-') ? sound : 'chime.wav';
     assert.equal(call.args.length,1);
     assert.equal(call.args[0],`${directory}/${expected}`);
     assert.equal(call.options.shell,false);
@@ -61,7 +61,7 @@ test('Linux falls back on missing players and server failures, and remembers suc
   assert.equal(calls[2].command,'aplay');
   calls[2].callback(null,'','');
   assert.equal(await done,true);
-  const next = player.play('magic.wav');
+  const next = player.play('chime.wav');
   assert.equal(calls[3].command,'aplay');
   calls[3].callback(Error('exit 1'),'','Device unavailable');
   await flush();
@@ -73,7 +73,7 @@ test('Linux falls back on missing players and server failures, and remembers suc
 
 test('Linux reports every failed backend and installation guidance', async () => {
   const {player,calls} = fixture('linux');
-  const done = player.play('magic.wav');
+  const done = player.play('chime.wav');
   const rejected = assert.rejects(done,/Install pw-play.*paplay.*aplay.*pw-play: missing.*paplay: refused.*aplay: timeout/);
   for (const [index,message] of ['missing','refused','timeout'].entries()) {
     calls[index].callback(Error(message),'','');
@@ -86,16 +86,16 @@ test('Linux reports every failed backend and installation guidance', async () =>
 test('macOS reports launch, timeout, and format failures with no Linux fallback', async () => {
   const {player,calls} = fixture();
   for (const [message,stderr] of [['ENOENT',''],['timeout',''],['exit 1','Invalid WAV']]) {
-    const done = player.play('magic.wav');
+    const done = player.play('chime.wav');
     calls.at(-1).callback(Error(message),'',stderr);
-    await assert.rejects(done,new RegExp(`magic.wav:.*macOS.*afplay.*${stderr || message}`));
+    await assert.rejects(done,new RegExp(`chime.wav:.*macOS.*afplay.*${stderr || message}`));
   }
   assert.equal(calls.length,3);
 });
 
 test('synchronous launch errors are handled for every backend', async () => {
   const {player,calls} = fixture('linux',Error('spawn failed'));
-  await assert.rejects(player.play('magic.wav'),/spawn failed/);
+  await assert.rejects(player.play('chime.wav'),/spawn failed/);
   assert.equal(calls.length,3);
   assert.equal(player.active,undefined);
 });
@@ -103,7 +103,7 @@ test('synchronous launch errors are handled for every backend', async () => {
 for (const platform of ['darwin','linux']) test(`${platform}: replacement and disposal cancel without fallback or false errors`, async () => {
   const {player,calls} = fixture(platform);
   const first = player.play('flute.wav');
-  const second = player.play('magic.wav');
+  const second = player.play('chime.wav');
   assert.equal(calls[0].killed,'SIGKILL');
   calls[0].callback(Error('killed'),'','');
   assert.equal(await first,false);
@@ -132,7 +132,7 @@ test('macOS/Linux native audio smoke test: all bundled WAVs', {
   const {createAudioPlayer} = require('../native-audio');
   const player = createAudioPlayer(path.join(__dirname,'../sounds'));
   try {
-    for (const sound of ['magic.wav','flute.wav','marimba.wav','scifi.wav','positive.wav','software.wav']) {
+    for (const sound of ['chime.wav','positive.wav','software.wav','flute.wav','marimba.wav','scifi.wav']) {
       assert.equal(await player.play(sound),true,sound);
     }
   } finally { player.dispose(); }
