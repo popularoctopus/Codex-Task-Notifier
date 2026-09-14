@@ -101,7 +101,7 @@ test('Play unlocks the same player for later completion sounds and sound changes
   assert(!p.messages.some(m=>m.type==='audioError'));
 });
 
-test('Windows previews request native playback and completion never plays duplicate webview audio', () => {
+test('native previews request playback and completion never plays duplicate webview audio', () => {
   const p = page(true);
   assert.equal(p.enableSounds.hidden,true);
   assert.equal(p.enableSounds.events.click,undefined);

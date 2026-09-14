@@ -2,7 +2,7 @@
   "name": "codex-status-board",
   "displayName": "Codex Task Notifier",
   "description": "Get notified when Codex tasks complete, with highly visible and audio alerts.",
-  "version": "0.2.22",
+  "version": "0.2.24",
   "icon": "icon.png",
   "publisher": "local-tools",
   "license": "MIT",
@@ -14,7 +14,7 @@
   "activationEvents": ["onStartupFinished"],
   "main": "./extension.js",
   "scripts": { "test": "node --test test", "package": "node package.cjs" },
-  "files": ["extension.js", "state.js", "windows-audio.js", "index.html", "sounds", "images", "icons", "icon.png", "README.md", "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md"],
+  "files": ["extension.js", "state.js", "native-audio.js", "windows-audio.js", "index.html", "sounds", "images", "icons", "icon.png", "README.md", "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md"],
   "contributes": {
     "commands": [
       {"command":"codexStatus.open","title":"Codex Task Notifier: Open Status Board"},

@@ -2,7 +2,7 @@
 const vscode = require('vscode');
 const { randomBytes } = require('crypto');
 const { TaskState } = require('./state');
-const { WindowsAudioPlayer } = require('./windows-audio');
+const { createAudioPlayer } = require('./native-audio');
 const STATUS_FILE = '.codex-task-status.json';
 
 function activate(context) {
@@ -11,14 +11,13 @@ function activate(context) {
   let preferences = context.globalState.get('preferences', {});
   const config = key => vscode.workspace.getConfiguration('codexTaskNotifier').get(key);
   const output = vscode.window.createOutputChannel('Codex Task Notifier');
-  const nativeAudio = process.platform === 'win32'
-    ? new WindowsAudioPlayer(vscode.Uri.joinPath(context.extensionUri, 'sounds').fsPath) : undefined;
+  const nativeAudio = createAudioPlayer(vscode.Uri.joinPath(context.extensionUri, 'sounds').fsPath);
   function playNativeSound(sound) {
     if (stopped || !nativeAudio) return;
     void nativeAudio.play(sound).catch(error => {
       if (stopped) return;
-      output.appendLine(`Windows audio playback failed: ${error.message}`);
-      void vscode.window.showWarningMessage('Codex Task Notifier could not play the Windows sound. See the Codex Task Notifier Output channel for details.');
+      output.appendLine(`Native audio playback failed (${process.platform}): ${error.message}`);
+      void vscode.window.showWarningMessage('Codex Task Notifier could not play the notification sound. See the Codex Task Notifier Output channel for details.');
     });
   }
   const lastErrors = new Map();

@@ -47,7 +47,9 @@ Start a new Codex session in other workspaces so they load the setup.
 
 The board opens when Codex begins a task. When it finishes, look for the **Done** alert and listen for the notification sound.
 
-On macOS and Linux, open the board settings and click **Enable sounds**. This plays your selected sound and enables completion audio while the board remains open. Repeat after closing or refreshing the board. Windows enables audio automatically and does not show this button.
+Sounds play automatically on Windows, macOS, and Linux, even with the board closed while VS Code is running. No **Enable sounds** click is needed. The **Play** buttons preview sounds through the same native player.
+
+macOS uses the built-in `/usr/bin/afplay`. Linux tries `pw-play` (PipeWire), `paplay` (PulseAudio), and `aplay` (ALSA), remembering the last successful player. Linux needs at least one of these commands installed and available to VS Code, plus a working desktop audio session. If playback fails, check **Output → Codex Task Notifier** for the attempted players and errors.
 
 ---
 

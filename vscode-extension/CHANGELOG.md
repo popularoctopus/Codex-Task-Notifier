@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.24
+
+- Play completion sounds and previews natively on macOS with afplay, and on Linux with pw-play, paplay, or aplay.
+- Play completion sounds with the board closed, without an Enable sounds click, on all three desktop platforms.
+- Retry Linux playback with another backend when a player is missing or fails, and report failures in the Output channel.
+
+## 0.2.23
+
+- Refresh the packaged extension icon assets with the latest supplied artwork.
+
 ## 0.2.22
 
 - Refresh the packaged extension icon assets with the updated supplied artwork.

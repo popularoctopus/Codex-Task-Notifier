@@ -2,9 +2,11 @@
 
 A self-contained VS Code task status board with Ready, Working..., and Done states,
 six selectable notification sounds, fonts, and light/dark modes. Designed for desktop
-VS Code on Windows, macOS, and Linux, with no separate Python or HTTP server. Windows
-completion audio uses a hidden built-in PowerShell player and needs no board click;
-macOS and Linux retain playback through the open board.
+VS Code on Windows, macOS, and Linux, with no separate Python or HTTP server.
+Completion audio uses native players: PowerShell on Windows, afplay on macOS, and
+pw-play, paplay, or aplay on Linux. No board click is needed, and sounds work with
+the board closed while VS Code remains running. Linux requires at least one of
+those players installed and a working desktop audio session.
 
 The extension source, tests, and dependency-free packager are in
 [`vscode-extension/`](vscode-extension/README.md).
@@ -29,7 +31,7 @@ No task content, credentials, machine-specific paths, old server scripts, or gen
 VSIX files are committed. Code is covered by the repository's [MIT license](LICENSE).
 See [asset notices](vscode-extension/THIRD_PARTY_NOTICES.md) for the supplied sounds.
 
-Version 0.2.2 is a distribution candidate, not a Marketplace release. Automated tests
+Version 0.2.24 is a distribution candidate, not a Marketplace release. Automated tests
 and package installation were checked on Windows. Real macOS/Linux runtime and sound
 validation, publisher setup, and sound redistribution confirmation remain before
 public Marketplace release. See the extension README for details and limitations.
