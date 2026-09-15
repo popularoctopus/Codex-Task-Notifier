@@ -2,6 +2,8 @@
 
 Visual and sound alerts for Codex tasks in desktop VS Code.
 
+Codex Task Notifier is an independent, unofficial extension. It is not affiliated with, endorsed by, or supported by OpenAI.
+
 ## How it works
 
 - Substantive Codex tasks automatically open a status tab showing **Working...**—by default, after 10 seconds of activity or earlier when a supported editing tool is detected. Quick chats stay quiet.
@@ -40,6 +42,15 @@ Open the Command Palette with **Ctrl+Shift+P** (Windows/Linux) or **Cmd+Shift+P*
 - **Codex Task Notifier: Open Status Board** — Open the status tab or bring an existing tab into view.
 - **Codex Task Notifier: Refresh Status Board** — Reload the status tab, or open it if it is closed.
 - **Codex Task Notifier: Test Notification** — Show **Working...**, then trigger **Done** and the selected sound after about two seconds.
+
+## Privacy
+
+Codex log data and matching session transcripts are processed locally solely to
+provide task-status indicators and notifications. The extension does not transmit
+this data or use it for any other purpose. Preferences are stored locally and used
+only to customize your experience; the extension does not transmit them.
+See the [privacy statement](PRIVACY.md) for details, controls, and information
+about VS Code's separate settings synchronization.
 
 ## Resources
 

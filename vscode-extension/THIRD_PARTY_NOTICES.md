@@ -1,9 +1,22 @@
-# Asset provenance and release decisions
+# Third-party asset notices
 
 chime.wav, flute.wav, marimba.wav, scifi.wav, positive.wav, and software.wav were
-provided by the project owner. Their original authors and redistribution licenses
-have not been supplied. The files are included for the owner's local testing;
-confirm distribution permission and add required attribution before public release.
+obtained from Mixkit (https://mixkit.co/) by the project owner and are used as
+notification sounds under the Mixkit Sound Effects Free License. That license
+permits commercial and non-commercial projects incorporating sound effects into
+a larger end product, subject to its restrictions and the Mixkit User Terms.
+The project owner considers this extension's integrated notification sounds to
+fall within that permission; this is not a statement of specific approval by Mixkit.
+
+The sound files are not covered by this repository's MIT license. Anyone taking
+them from the extension or repository for another project must review and comply
+with the applicable Mixkit license and terms before using or redistributing them.
+In particular, the license restricts redistribution of sound effects on their own,
+as stock, in a tool or template, or with source files. Inclusion here does not
+grant additional rights or waive those restrictions.
+
+Mixkit Sound Effects Free License: https://mixkit.co/license/#sfxFree
+Mixkit User Terms: https://mixkit.co/terms/
 
 Scifi was converted from 24-bit extensible PCM to standard 16-bit PCM WAV
 for Windows SoundPlayer compatibility. Their sample rate, channel count, and duration
@@ -15,5 +28,4 @@ It is distributed under the SIL Open Font License 1.1. Copyright notices and the
 license are included in fonts/ManufacturingConsent-OFL.txt.
 
 No Windows system audio files are bundled. Code uses the repository's MIT license,
-included as LICENSE. This document does not establish redistribution rights for
-third-party sound assets.
+included as LICENSE. Third-party assets remain subject to their respective licenses.

@@ -2,9 +2,9 @@
   "name": "codex-status-board",
   "displayName": "Codex Task Notifier",
   "description": "Get notified when Codex tasks complete, with highly visible and audio alerts.",
-  "version": "0.3.10",
+  "version": "0.3.13",
   "icon": "icons/icon.png",
-  "publisher": "local-tools",
+  "publisher": "grgwtsn",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -31,7 +31,7 @@
   "main": "./extension.js",
   "scripts": {
     "test": "node --test test",
-    "package": "node package.cjs"
+    "package": "vsce package --no-dependencies"
   },
   "files": [
     "extension.js",
@@ -46,8 +46,8 @@
     "sounds",
     "images",
     "icons",
-    "icon.png",
     "README.md",
+    "PRIVACY.md",
     "CHANGELOG.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"

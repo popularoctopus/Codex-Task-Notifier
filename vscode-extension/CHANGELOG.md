@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.13
+
+- Refresh the packaged extension icons.
+
+## 0.3.12
+
+- Replace the extension icons with updated artwork and exclude the unused legacy icon from the package.
+- Include the privacy statement and updated third-party sound attribution.
+
+## 0.3.11
+
+- Package releases with the official VS Code Extension Manager (`@vscode/vsce`).
+- Clarify that Codex Task Notifier is an independent, unofficial extension not affiliated with OpenAI.
+
 ## 0.3.10
 
 - Replace the Magic notification sound with Chime.
