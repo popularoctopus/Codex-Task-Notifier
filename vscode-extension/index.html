@@ -73,6 +73,7 @@
       <label><input type="radio" name="sound" value="flute.wav">Flute <button class="preview" type="button" data-sound="flute.wav">Play</button></label>
       <label><input type="radio" name="sound" value="marimba.wav">Marimba <button class="preview" type="button" data-sound="marimba.wav">Play</button></label>
       <label><input type="radio" name="sound" value="scifi.wav">Scifi <button class="preview" type="button" data-sound="scifi.wav">Play</button></label>
+      <label><input type="radio" name="sound" value="none">No sound</label>
       <button id="enable-sounds" class="setup-button" type="button" hidden title="Play the selected sound to enable completion sounds. Repeat after closing or refreshing the board.">Enable sounds</button>
     </fieldset>
     <a class="support-link" href="https://ko-fi.com/popularoctopus" target="_blank" rel="noopener noreferrer"><span class="support-label">Donate</span> <span class="support-heart" aria-hidden="true">&#9829;</span></a>
@@ -151,7 +152,10 @@
     }
     soundInputs.forEach(input => {
       input.checked = input.value === selectedSound;
-      input.addEventListener('change', () => localStorage.setItem('codexSound', input.value));
+      input.addEventListener('change', () => {
+        localStorage.setItem('codexSound', input.value);
+        enableSounds.hidden = nativeAudio || input.value === 'none';
+      });
     });
     menuButton.addEventListener('click', () => {
       const open = menu.hidden;
@@ -168,6 +172,7 @@
     const activeAudio = nativeAudio ? undefined : new Audio();
     let playbackRequest = 0;
     function playSound(name) {
+      if (name === 'none') return;
       if (!availableSounds.has(name)) name = defaultSound;
       if (nativeAudio) {
         api.postMessage({type:'playSound', sound:name});
@@ -186,7 +191,7 @@
     }
     document.querySelectorAll('.preview').forEach(button => button.addEventListener('click', () => playSound(button.dataset.sound)));
     const enableSounds = document.getElementById('enable-sounds');
-    enableSounds.hidden = nativeAudio;
+    enableSounds.hidden = nativeAudio || selectedSound === 'none';
     if (!nativeAudio) enableSounds.addEventListener('click', () => playSound(settings.codexSound || defaultSound));
     document.body.classList.add('ready');
     window.addEventListener('message', event => {
@@ -202,6 +207,7 @@
         document.querySelectorAll('input[name="mode"]').forEach(input => input.checked = input.value === (settings.codexMode || defaultMode));
         fontInputs.forEach(input => input.checked = input.value === font);
         soundInputs.forEach(input => input.checked = input.value === (availableSounds.has(settings.codexSound) ? settings.codexSound : defaultSound));
+        enableSounds.hidden = nativeAudio || settings.codexSound === 'none';
       }
       currentState = status.state;
       document.body.title = currentState === 'done' ? 'Click to reset.' : '';

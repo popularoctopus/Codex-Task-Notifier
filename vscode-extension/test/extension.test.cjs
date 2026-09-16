@@ -93,6 +93,15 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
   assert.equal(sent.length,sentBefore); assert.equal(created,1);
   assert.equal(notices.length,2);
   assert.deepEqual(played,['flute.wav','chime.wav','marimba.wav']);
+  receive({type:'preferences',values:{codexSound:'none'}});
+  await signal('working', 'muted-start');
+  await signal('done', 'muted-done');
+  assert.deepEqual(played,['flute.wav','chime.wav','marimba.wav']);
+  await commands['codexStatus.open']();
+  receive({type:'ready'});
+  assert.equal(sent.at(-1).preferences.codexSound,'none');
+  assert.equal(sent.at(-1).state,'done');
+  receive({type:'preferences',values:{codexSound:'marimba.wav'}});
   {
     nativeFailure=Error('Native player unavailable');
     await signal('working', '5');

@@ -12,8 +12,8 @@ function page(nativeAudio = false) {
   const menu = Object.assign(node(),{hidden:true}), menuButton = node();
   const enableSounds = Object.assign(node(),{hidden:true,parent:menu});
   const modes = ['dark','light'].map(value => Object.assign(node(),{value}));
-  const sounds = ['chime','positive','software','flute','marimba','scifi'].map(s => Object.assign(node(),{value:s+'.wav'}));
-  const previews = sounds.map(s => Object.assign(node(),{dataset:{sound:s.value}}));
+  const sounds = [...html.matchAll(/name="sound" value="([^"]+)"/g)].map(match => Object.assign(node(),{value:match[1]}));
+  const previews = sounds.filter(s => s.value !== 'none').map(s => Object.assign(node(),{dataset:{sound:s.value}}));
   const fonts = [Object.assign(node(),{value:'"Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif'})];
   const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
   vm.runInNewContext(script, {
@@ -46,12 +46,32 @@ function page(nativeAudio = false) {
 
 test('fresh boards select Chime, Arial, and dark mode by default', () => {
   const p = page(true);
-  assert.deepEqual(p.sounds.map(input => input.value), ['chime.wav','positive.wav','software.wav','flute.wav','marimba.wav','scifi.wav']);
+  assert.deepEqual(p.sounds.map(input => input.value), ['chime.wav','positive.wav','software.wav','flute.wav','marimba.wav','scifi.wav','none']);
   assert.equal(p.sounds.find(input => input.checked).value, 'chime.wav');
   assert.equal(p.fonts.find(input => input.checked).value, '"Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif');
   assert.equal(p.body.style.fontFamily, '"Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif');
   assert.equal(p.modes.find(input => input.checked).value, 'dark');
   assert(!p.classes.has('light-mode'));
+});
+
+test('No sound persists, keeps the Done flash, and allows sounds to be enabled again', async () => {
+  const p = page();
+  p.sounds.find(input => input.value === 'none').events.change();
+  assert.equal(p.messages.at(-1).values.codexSound, 'none');
+  assert.equal(p.enableSounds.hidden, true);
+  p.send({state:'done',completed:true,preferences:{codexSound:'none'}});
+  await Promise.resolve();
+  assert.equal(p.sounds.find(input => input.checked).value, 'none');
+  assert.equal(p.label.textContent, 'Done');
+  assert(p.classes.has('done-flash'));
+  assert.equal(p.plays.length, 0);
+  assert(!p.messages.some(m => m.type === 'audioError' || m.type === 'playSound'));
+  p.sounds.find(input => input.value === 'chime.wav').events.change();
+  assert.equal(p.enableSounds.hidden, false);
+  p.click(p.enableSounds);
+  p.send({state:'done',completed:true,preferences:{codexSound:'chime.wav'}});
+  await Promise.resolve();
+  assert.equal(p.plays.length, 2);
 });
 
 test('settings stays open for inside clicks and closes for outside clicks with correct expanded state', () => {

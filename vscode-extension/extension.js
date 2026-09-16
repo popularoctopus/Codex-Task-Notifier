@@ -27,7 +27,7 @@ function activate(context) {
   const output = vscode.window.createOutputChannel('Codex Task Notifier');
   const nativeAudio = createAudioPlayer(vscode.Uri.joinPath(context.extensionUri, 'sounds').fsPath);
   function playNativeSound(sound) {
-    if (stopped || !nativeAudio) return;
+    if (stopped || !nativeAudio || sound === 'none') return;
     void nativeAudio.play(sound).catch(error => {
       if (stopped) return;
       output.appendLine(`Native audio playback failed (${process.platform}): ${error.message}`);
