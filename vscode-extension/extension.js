@@ -3,15 +3,17 @@ const vscode = require('vscode');
 const { randomBytes } = require('crypto');
 const { TaskState } = require('./state');
 const { createAudioPlayer } = require('./native-audio');
+const { normalizeVolume } = require('./audio-volume');
 const path = require('node:path');
 const os = require('node:os');
 const { CodexLogDetector, CodexLogReader } = require('./codex-log');
-const { CodexEditMonitor } = require('./codex-edits');
+const { CodexSessionMonitor } = require('./codex-edits');
 
 const DEFAULT_PREFERENCES = {
   codexMode: 'dark',
   codexFont: '"Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif',
-  codexSound: 'chime.wav'
+  codexSound: 'chime.wav',
+  codexVolume: 100
 };
 
 function activate(context) {
@@ -23,12 +25,13 @@ function activate(context) {
     ...(storedPreferences && typeof storedPreferences === 'object' ? storedPreferences : {})
   };
   if (preferences.codexSound === 'magic.wav') preferences.codexSound = DEFAULT_PREFERENCES.codexSound;
+  preferences.codexVolume = normalizeVolume(preferences.codexVolume);
   const config = key => vscode.workspace.getConfiguration('codexTaskNotifier').get(key);
   const output = vscode.window.createOutputChannel('Codex Task Notifier');
   const nativeAudio = createAudioPlayer(vscode.Uri.joinPath(context.extensionUri, 'sounds').fsPath);
   function playNativeSound(sound) {
     if (stopped || !nativeAudio || sound === 'none') return;
-    void nativeAudio.play(sound).catch(error => {
+    void nativeAudio.play(sound, preferences.codexVolume).catch(error => {
       if (stopped) return;
       output.appendLine(`Native audio playback failed (${process.platform}): ${error.message}`);
       void vscode.window.showWarningMessage('Codex Task Notifier could not play the notification sound. See the Codex Task Notifier Output channel for details.');
@@ -40,12 +43,12 @@ function activate(context) {
     eventQueue = eventQueue.then(() => stopped ? undefined : apply(source, value)).catch(error => {
       output.appendLine(`Notification failed: ${error.message}`);
     });
-  }, { heuristic: config('detectionMode') !== 'conservative',
-    minimumMs: (Number.isFinite(config('minimumActivitySeconds')) ? config('minimumActivitySeconds') : 10) * 1000 });
+  }, { minimumMs: (Number.isFinite(config('minimumActivitySeconds')) ? config('minimumActivitySeconds') : 10) * 1000 });
   const logPath = config('codexLogPath') || path.join(path.dirname(context.logUri.fsPath), 'openai.chatgpt', 'Codex.log');
   const reader = new CodexLogReader(logPath, detector);
-  const editMonitor = config('detectFileEdits') === false ? undefined : new CodexEditMonitor(
-    path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'sessions'), detector);
+  const sessionMonitor = new CodexSessionMonitor(
+    path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'sessions'), detector,
+    { detectEdits: config('detectFileEdits') !== false });
   function send(extra = {}) {
     return panel?.webview.postMessage({ type: 'status', state: state.state, preferences, ...extra });
   }
@@ -69,8 +72,10 @@ function activate(context) {
         for (const key of ['codexMode','codexFont','codexSound']) {
           if (typeof message.values[key] === 'string' && message.values[key].length < 200) clean[key] = message.values[key];
         }
-        preferences = clean;
-        void context.globalState.update('preferences', clean);
+        if (Object.hasOwn(message.values, 'codexVolume')) clean.codexVolume = normalizeVolume(message.values.codexVolume);
+        preferences = { ...preferences, ...clean };
+        if (preferences.codexVolume === 0) nativeAudio?.stop();
+        void context.globalState.update('preferences', preferences);
       }
       if (message?.type === 'audioError') {
         const detail = ['sound','name','message'].map(key =>
@@ -101,7 +106,8 @@ function activate(context) {
   async function apply(source, value) {
     const change = state.accept(source, value);
     if (!change) return;
-    output.appendLine(change.finishes ? 'Codex completion detected.' : change.starts ? 'Codex turn started.' : 'Codex tracking reset without completion.');
+    output.appendLine(change.finishes ? 'Codex final response detected.' :
+      change.starts ? 'Codex input detected.' : value.state === 'working' ? 'Codex working.' : 'Codex tracking reset without completion.');
     if (change.starts && config('autoOpen')) pendingOpen = true;
     if (pendingOpen) {
       pendingOpen = false;
@@ -121,9 +127,10 @@ function activate(context) {
     busy = true;
     try {
       await reader.poll();
-      await editMonitor?.poll();
+      await sessionMonitor.poll();
       lastError = undefined;
     } catch (error) {
+      detector.reset();
       if (lastError !== error.message) output.appendLine(`Codex log read failed: ${error.message}`);
       lastError = error.message;
     } finally { busy = false; if (!stopped) timer = setTimeout(poll, 500); }

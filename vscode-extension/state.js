@@ -7,22 +7,27 @@ class TaskState {
     return true;
   }
   accept(source, value) {
-    if (!value || !['working', 'done', 'cancelled'].includes(value.state) ||
+    if (!value || !['thinking', 'working', 'done', 'cancelled'].includes(value.state) ||
         typeof value.updatedAt !== 'string' || !value.updatedAt.length || value.updatedAt.length > 128) return null;
     const old = this.sources.get(source);
     if (value.state === 'cancelled') {
       this.sources.delete(source);
-      this.state = [...this.sources.values()].some(s => s.state === 'working') ? 'working' : 'ready';
+      this.state = this.activeState() || 'ready';
       return { state: this.state, starts: false, finishes: false };
     }
     if (old?.key === value.updatedAt && old.state === value.state) return null;
-    const starts = value.state === 'working' && (old?.state !== 'working' || old.key !== value.updatedAt);
-    const finishes = old?.state === 'working' && value.state === 'done';
+    const active = state => state === 'thinking' || state === 'working';
+    const starts = active(value.state) && !active(old?.state);
+    const finishes = active(old?.state) && value.state === 'done';
     this.sources.set(source, { key: value.updatedAt, state: value.state });
-    if (starts) this.state = 'working';
-    if (finishes) this.state = [...this.sources.values()].some(s => s.state === 'working') ? 'working' : 'done';
+    if (active(value.state) || finishes) this.state = this.activeState() || 'done';
     // Stored Done on first load must not change Ready or trigger a notification.
-    return starts || finishes ? { state: this.state, starts, finishes } : null;
+    return active(value.state) || finishes ? { state: this.state, starts, finishes } : null;
+  }
+  activeState() {
+    const sources = [...this.sources.values()];
+    return sources.some(s => s.state === 'working') ? 'working' :
+      sources.some(s => s.state === 'thinking') ? 'thinking' : undefined;
   }
 }
 module.exports = { TaskState };

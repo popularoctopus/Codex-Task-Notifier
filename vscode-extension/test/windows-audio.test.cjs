@@ -5,9 +5,13 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 function fixture() {
-  const calls=[];
+  const calls=[], prepared=[];
   const sandbox={Buffer,process:{env:{SystemRoot:'C:\\Windows'}},module:{exports:{}},require(name){
     if(name==='node:path')return path.win32;
+    if(name==='./audio-volume')return {
+      normalizeVolume:require('../audio-volume').normalizeVolume,
+      prepareSound(filename,volume){const item={filename,volume,disposed:false,dispose(){this.disposed=true;}};prepared.push(item);return item;}
+    };
     if(name==='node:child_process')return {execFile(executable,args,options,callback){
       const call={executable,args,options,callback,killed:false};calls.push(call);
       return {kill(){call.killed=true;}};
@@ -16,8 +20,24 @@ function fixture() {
   }};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../windows-audio.js'),'utf8'),sandbox);
   const directory="C:\\Users\\Sound O'Brien $(ignored)\\sounds";
-  return {player:new sandbox.module.exports.WindowsAudioPlayer(directory),calls,directory};
+  return {player:new sandbox.module.exports.WindowsAudioPlayer(directory),calls,directory,prepared};
 }
+
+test('Windows applies volume, skips muted playback, and cleans up on cancellation and failure', async () => {
+  const {player,calls,prepared}=fixture();
+  const first=player.play('flute.wav',25);
+  assert.equal(prepared[0].volume,25);
+  assert.equal(await player.play('flute.wav',0),false);
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].killed,true);
+  calls[0].callback(Error('killed'));
+  assert.equal(await first,false);
+  assert.equal(prepared[0].disposed,true);
+  const second=player.play('chime.wav',50);
+  calls[1].callback(Error('failed'));
+  await assert.rejects(second,/failed/);
+  assert.equal(prepared[1].disposed,true);
+});
 
 test('Windows launches hidden, bounded playback with asset paths passed as data', async () => {
   const {player,calls,directory}=fixture();

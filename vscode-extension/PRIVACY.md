@@ -1,13 +1,14 @@
 # Privacy statement
 
-Last updated: September 15, 2026
+Last updated: September 17, 2026
 
 ## Local log processing
 
 Codex Task Notifier reads and processes local Codex log data solely to detect task
-activity and provide status indicators and visual or audio notifications. When
-file-edit detection is enabled, it also reads matching local Codex session
-transcripts to recognize supported editing-tool calls for notification timing.
+activity and provide status indicators and visual or audio notifications. It also
+reads matching local Codex session transcripts for turn starts, final responses,
+completion, and interruptions. When file-edit detection is enabled, it recognizes
+supported editing-tool calls for notification timing.
 Transcript content is not executed.
 
 All processing of this log and transcript data takes place on your computer.
@@ -24,7 +25,7 @@ the extension. Existing Codex logs and transcripts remain managed by Codex.
 
 ## Stored preferences
 
-Preferences such as the selected sound, font, and appearance are stored locally
+Preferences such as the selected sound, volume, font, and appearance are stored locally
 in VS Code's extension storage so your choices persist between sessions.
 Notification settings are stored through VS Code's configuration system.
 The extension does not transmit these preferences or settings, and uses them
@@ -34,7 +35,8 @@ used for analytics, advertising, profiling, or any unrelated purpose.
 ## Your controls and other services
 
 You can turn off transcript-based file-edit detection using
-`codexTaskNotifier.detectFileEdits` and reload the VS Code window. You can disable
+`codexTaskNotifier.detectFileEdits` and reload the VS Code window. Session lifecycle
+events are still read when this option is off. You can disable
 or uninstall the extension to stop its log processing.
 
 This statement describes Codex Task Notifier's own behavior. VS Code, Codex,

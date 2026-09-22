@@ -2,6 +2,7 @@
 const { execFile } = require('node:child_process');
 const path = require('node:path');
 const { WindowsAudioPlayer } = require('./windows-audio');
+const { normalizeVolume, prepareSound } = require('./audio-volume');
 
 const SOUNDS = new Set(['chime.wav','positive.wav','software.wav','flute.wav','marimba.wav','scifi.wav']);
 
@@ -21,9 +22,11 @@ class PosixAudioPlayer {
     request.child?.kill('SIGKILL');
     this.active = undefined;
   }
-  async play(name) {
+  async play(name, volume = 100) {
     if (this.disposed) return false;
     this.stop();
+    volume = normalizeVolume(volume);
+    if (volume === 0) return false;
     const sound = SOUNDS.has(name) ? name : 'chime.wav';
     const filename = path.join(this.directory, sound);
     const request = { cancelled: false };
@@ -31,13 +34,15 @@ class PosixAudioPlayer {
     const commands = this.preferred
       ? [this.preferred, ...this.commands.filter(command => command !== this.preferred)] : this.commands;
     const failures = [];
+    let prepared;
     try {
+      prepared = prepareSound(filename, volume);
       for (const command of commands) {
         if (request.cancelled) return false;
         try {
           // Fixed commands and allowlisted absolute asset paths; never use a shell.
           await new Promise((resolve, reject) => {
-            request.child = execFile(command, [filename],
+            request.child = execFile(command, [prepared.filename],
               { shell: false, windowsHide: true, timeout: 15000, killSignal: 'SIGKILL', maxBuffer: 16384 },
               (error, stdout, stderr = '') => {
                 if (error) reject(new Error(stderr.trim() || error.message));
@@ -58,6 +63,7 @@ class PosixAudioPlayer {
       throw new Error(`${sound}: ${help} ${failures.join('; ')}`);
     } finally {
       if (this.active === request) this.active = undefined;
+      prepared?.dispose();
     }
   }
   dispose() {

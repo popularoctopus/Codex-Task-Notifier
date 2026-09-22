@@ -33,3 +33,16 @@ test('invalid and partially written values never finish a task', () => {
   for (const value of [null,{}, {state:'error',updatedAt:'2'}, {state:'done'}, {state:'done',updatedAt:5}]) assert.equal(state.accept('a',value),null);
   assert.equal(state.state,'working');
 });
+
+test('Thinking transitions without duplicate starts and active sources survive cancellations', () => {
+  const state=new TaskState();
+  assert.equal(state.accept('a',{state:'thinking',updatedAt:'input'}).starts,true);
+  assert.equal(state.state,'thinking');
+  assert.equal(state.accept('a',{state:'working',updatedAt:'edit'}).starts,false);
+  assert.equal(state.state,'working');
+  state.accept('b',{state:'thinking',updatedAt:'input'});
+  assert.equal(state.state,'working');
+  assert.equal(state.accept('a',{state:'cancelled',updatedAt:'abort'}).state,'thinking');
+  const change=state.accept('b',{state:'cancelled',updatedAt:'quick'});
+  assert.equal(change.state,'ready');assert.equal(change.finishes,false);
+});

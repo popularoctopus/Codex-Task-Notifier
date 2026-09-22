@@ -6,12 +6,29 @@ Codex Task Notifier is an independent, unofficial extension. It is not affiliate
 
 ## How it works
 
-- Substantive Codex tasks automatically open a status tab showing **Working...**—by default, after 10 seconds of activity or earlier when a supported editing tool is detected. Quick chats stay quiet.
-- When completion is detected, **Done** flashes in the status tab and the selected alert sound plays. Sound alerts also work when the tab is closed.
+- When Codex receives a new turn, the status tab opens showing **Thinking**.
+- The tab switches to **Working...** after 10 seconds, or immediately when a supported file-editing call is detected.
+- When Codex produces its final response, **Done** flashes and the selected alert sound plays. Sound alerts also work when the tab is closed.
+- Responses that finish in under 10 seconds return quietly to **Ready**, even if an edit briefly showed **Working...**. Interrupted or superseded turns also return to **Ready** without a completion alert.
 - Click the status tab while it shows **Done** to reset it to **Ready**.
-- Open the tab's menu to choose dark or light mode, a font, and one of six notification sounds.
+- Open the tab's menu to choose dark or light mode, a font, and one of six notification sounds. Adjust the Volume slider from 0% (muted) to 100%; it saves automatically and controls previews and completion alerts, including when the board is closed.
 
-An approval pause can also trigger **Done**. If Codex resumes work, the tab returns to **Working...**.
+Approval prompts and read-state changes do not trigger **Done**. If several turns
+are active, **Working...** takes priority over **Thinking**, and finishing or
+interrupting one turn does not hide another active turn.
+
+Detection follows this VS Code window's local `Codex.log` and matching session
+transcripts. It polls every 500 ms; transcript creation and flushing can add delay.
+Existing history is skipped when the extension starts, so start a new turn after
+reloading. These are private Codex formats and may change. Remote or unavailable
+transcripts cannot provide final-response detection. Supported early edit signals
+are `apply_patch` calls (including direct calls inside `functions.exec`) and patch
+start events; other editing methods still switch to Working at the time threshold.
+
+`codexTaskNotifier.minimumActivitySeconds` changes the default 10-second threshold.
+`codexTaskNotifier.detectFileEdits` disables only early edit detection; lifecycle
+events are still read. The legacy `detectionMode` setting is no longer used.
+Reload the VS Code window after changing detection settings.
 
 ## Screenshots
 

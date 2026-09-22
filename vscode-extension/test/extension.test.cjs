@@ -7,7 +7,7 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
   const commands={}, sent=[], notices=[], warnings=[], logs=[]; let next, emitLog, receive, created=0, autoOpen=true;
   const root = path.join(__dirname,'..');
   let renderedHtml;
-  const played=[]; let nativeDisposed=false, closePanel, nativeFailure;
+  const played=[], volumes=[], saved=[]; let nativeDisposed=false, closePanel, nativeFailure;
   const uri = value => ({toString:()=>value,fsPath:value});
   const signal = async (state, updatedAt) => { emitLog('test-thread', {state, updatedAt}); await new Promise(resolve => setImmediate(resolve)); };
   const window={state:{focused:true},createOutputChannel:()=>({appendLine(line){logs.push(line);},dispose(){}}),
@@ -22,8 +22,9 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
   const sandbox={Buffer,process:{platform,env:{}},module:{exports:{}},setTimeout:fn=>{next=fn;return 1;},clearTimeout(){},require:name=>{
     if(name==='vscode')return {window,workspace,Uri:{joinPath:(base,name)=>uri(base+'/'+name),file:uri},ViewColumn:{Active:-1},commands:{registerCommand:(name,fn)=>{commands[name]=fn;return {dispose(){}};}}};
     if(name==='node:path')return path.posix;
+    if(name==='./audio-volume')return require('../audio-volume');
     if(name==='node:os')return {homedir:()=>'/test-home'};
-    if(name==='./codex-edits')return {CodexEditMonitor:class {async poll(){}}};
+    if(name==='./codex-edits')return {CodexSessionMonitor:class {async poll(){}}};
     if(name==='./codex-log')return {CodexLogDetector:class {constructor(emit){emitLog=emit;}dispose(){}},CodexLogReader:class {constructor(filename){assert.equal(filename,'logs/openai.chatgpt/Codex.log');}async poll(){}}};
     if(name==='crypto')return require('crypto');
     if(name==='./state')return require('../state');
@@ -31,9 +32,11 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
       // Use the real platform factory, replacing only the OS player implementations.
       const audioSandbox={module:{exports:{}},process:{platform},require(name){
         if(name==='node:path')return path.posix;
+        if(name==='./audio-volume')return {normalizeVolume:require('../audio-volume').normalizeVolume,prepareSound(filename,volume){volumes.push(volume);return {filename,dispose(){}};}};
         if(name==='./windows-audio')return {WindowsAudioPlayer:class {
           constructor(directory){assert.equal(directory,'extension/sounds');}
-          play(sound){played.push(sound);return nativeFailure?Promise.reject(nativeFailure):Promise.resolve(true);}
+          play(sound,volume){volumes.push(volume);played.push(sound);return nativeFailure?Promise.reject(nativeFailure):Promise.resolve(true);}
+          stop(){}
           dispose(){nativeDisposed=true;}
         }};
         if(name==='node:child_process')return {execFile(command,args,options,callback){
@@ -48,7 +51,7 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
         const player=audioSandbox.module.exports.createAudioPlayer(directory);
         if(platform!=='win32') {
           const play=player.play.bind(player), dispose=player.dispose.bind(player);
-          player.play=sound=>nativeFailure?Promise.reject(nativeFailure):play(sound);
+          player.play=(sound,volume)=>nativeFailure?Promise.reject(nativeFailure):play(sound,volume);
           player.dispose=()=>{nativeDisposed=true;dispose();};
         }
         return player;
@@ -57,12 +60,18 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
     throw Error('Unexpected runtime dependency: '+name);
   }};
   vm.runInNewContext(fs.readFileSync(path.join(root,'extension.js'),'utf8'),sandbox);
-  const context={logUri:uri('logs/notifier'),extensionUri:uri('extension'),subscriptions:[],globalState:{get:()=>({codexSound:'flute.wav'}),update:async()=>{}}};
+  const context={logUri:uri('logs/notifier'),extensionUri:uri('extension'),subscriptions:[],globalState:{get:()=>({codexSound:'flute.wav'}),update:async(key,value)=>{saved.push(value);}}};
   sandbox.module.exports.activate(context);
   const flush=()=>new Promise(resolve=>setImmediate(resolve));
   await flush(); assert.equal(created,0); assert.equal(played.length,0);
   assert.equal(commands['codexStatus.instructions'],undefined);
   window.state.focused=false;
+  await signal('thinking', 'input');
+  assert.equal(sent.at(-1).state,'thinking');
+  assert.equal(notices.length,0);assert.equal(played.length,0);
+  await signal('cancelled','quick');assert.equal(sent.at(-1).state,'ready');
+  assert.equal(notices.length,0);assert.equal(played.length,0);
+  await signal('thinking','next-input');
   await signal('working', '1');
   assert.equal(created,1); receive({type:'ready'}); assert.equal(sent.at(-1).state,'working');
   assert.match(renderedHtml, /src: url\("vscode-resource:\/extension\/fonts\/ManufacturingConsent-Regular.ttf"\)/);
@@ -72,6 +81,7 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
   await signal('done', '2');
   assert.equal(sent.at(-1).completed,true); assert.equal(notices.length,1);
   assert.deepEqual(played,['flute.wav']);
+  assert.deepEqual(volumes,[100]);
   receive({type:'reset'});
   assert.equal(sent.at(-1).state,'ready');
   await next(); assert.equal(notices.length,1);
@@ -83,7 +93,11 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
   receive({type:'audioError',name:'NotSupportedError',message:'Unsupported format',sound:'chime.wav'});
   assert.match(warnings.at(-1),/Output channel/);
   assert.match(logs.at(-1),/NotSupportedError: Unsupported format/);
+  receive({type:'preferences',values:{codexVolume:25}});
+  assert.equal(saved.at(-1).codexVolume,25);
+  assert.equal(saved.at(-1).codexSound,'flute.wav');
   receive({type:'playSound',sound:'chime.wav'});
+  assert.equal(volumes.at(-1),25);
   assert.equal(played.at(-1),'chime.wav');
   receive({type:'preferences',values:{codexSound:'marimba.wav'}});
   closePanel(); window.state.focused=false; autoOpen=false;
@@ -93,6 +107,7 @@ for (const platform of ['darwin','linux','win32']) test(`${platform}: completion
   assert.equal(sent.length,sentBefore); assert.equal(created,1);
   assert.equal(notices.length,2);
   assert.deepEqual(played,['flute.wav','chime.wav','marimba.wav']);
+  assert.equal(volumes.at(-1),25);
   receive({type:'preferences',values:{codexSound:'none'}});
   await signal('working', 'muted-start');
   await signal('done', 'muted-done');

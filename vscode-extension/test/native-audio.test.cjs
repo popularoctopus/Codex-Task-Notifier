@@ -5,10 +5,14 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 function fixture(platform = 'darwin', launchError) {
-  const calls = [];
+  const calls = [], prepared = [];
   class WindowsAudioPlayer { constructor(directory) { this.directory = directory; } }
   const sandbox = {module:{exports:{}},process:{platform},require(name) {
     if (name === 'node:path') return path.posix;
+    if (name === './audio-volume') return {
+      normalizeVolume:require('../audio-volume').normalizeVolume,
+      prepareSound(filename,volume){const item={filename,volume,disposed:false,dispose(){this.disposed=true;}};prepared.push(item);return item;}
+    };
     if (name === './windows-audio') return {WindowsAudioPlayer};
     if (name === 'node:child_process') return {execFile(command,args,options,callback) {
       const call = {command,args,options,callback,killed:false};
@@ -20,9 +24,25 @@ function fixture(platform = 'darwin', launchError) {
   }};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../native-audio.js'),'utf8'),sandbox);
   const directory = "/Users/Sound O'Brien $(ignored)/音/sounds";
-  return {player:sandbox.module.exports.createAudioPlayer(directory),calls,directory,WindowsAudioPlayer};
+  return {player:sandbox.module.exports.createAudioPlayer(directory),calls,directory,WindowsAudioPlayer,prepared};
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
+
+for (const platform of ['darwin','linux']) test(`${platform}: volume preparation, mute, and cleanup`, async () => {
+  const {player,calls,prepared}=fixture(platform);
+  const first=player.play('flute.wav',25);
+  assert.equal(prepared[0].volume,25);
+  assert.equal(await player.play('flute.wav',0),false);
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].killed,'SIGKILL');
+  calls[0].callback(Error('killed'));
+  assert.equal(await first,false);
+  assert.equal(prepared[0].disposed,true);
+  const second=player.play('chime.wav',50);
+  calls[1].callback(null);
+  assert.equal(await second,true);
+  assert.equal(prepared[1].disposed,true);
+});
 
 test('factory preserves the Windows backend and only supports native desktop platforms', () => {
   const windows = fixture('win32');

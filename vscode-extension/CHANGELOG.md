@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.15
+
+- Add a saved 0–100% volume slider to the board settings for previews and completion sounds on Windows, macOS, and Linux, including alerts with the board closed. Existing installations default to 100%; 0% mutes audio while keeping visual notifications.
+
+## 0.3.14
+
+- Show Thinking when a new input turn starts, then Working on a supported editing call or after the default 10-second threshold.
+- Detect final responses and interruptions from matching local session transcripts; approval pauses and read-state/diff events no longer trigger Done.
+- Return quietly to Ready for final responses under the threshold, including editing turns, and for interrupted or disrupted sessions.
+- Use event timestamps for short-turn detection and preserve other active sessions on completion or cancellation.
+
 ## 0.3.13
 
 - Refresh the packaged extension icons.

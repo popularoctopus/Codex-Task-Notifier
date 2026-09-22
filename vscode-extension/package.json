@@ -2,7 +2,7 @@
   "name": "codex-status-board",
   "displayName": "Codex Task Notifier",
   "description": "Get notified when Codex tasks complete, with highly visible and audio alerts.",
-  "version": "0.3.13",
+  "version": "0.3.15",
   "icon": "icons/icon.png",
   "publisher": "grgwtsn",
   "license": "MIT",
@@ -39,6 +39,7 @@
     "codex-log.js",
     "codex-edits.js",
     "native-audio.js",
+    "audio-volume.js",
     "windows-audio.js",
     "index.html",
     "fonts/ManufacturingConsent-Regular.ttf",
@@ -75,12 +76,12 @@
           "default": 10,
           "minimum": 0,
           "maximum": 300,
-          "description": "Keep quick turns quiet. Show Working and enable alerts after this many seconds of ongoing activity, or earlier for a detected edit. Set 0 for all turns. Reload the window after changing."
+          "description": "Show Thinking on input, then Working after this many seconds or earlier for a detected edit. Final responses below this duration return quietly to Ready, including editing turns. Set 0 to notify for all final responses. Reload the window after changing."
         },
         "codexTaskNotifier.detectFileEdits": {
           "type": "boolean",
           "default": true,
-          "description": "Use matching local Codex session transcripts to recognize apply_patch calls and show Working before the activity threshold. No transcript content is transmitted. Reload the window after changing."
+          "description": "Recognize apply_patch calls in matching local session transcripts and show Working before the activity threshold. Lifecycle events are still read when disabled. No transcript content is transmitted. Reload the window after changing."
         },
         "codexTaskNotifier.autoOpen": {
           "type": "boolean",
@@ -99,7 +100,8 @@
             "conservative"
           ],
           "default": "automatic",
-          "description": "Automatic includes chat completion inferred from read-state logs. Conservative requires a turn-diff completion marker. Reload the window after changing."
+          "description": "Legacy detection setting. Completion now always requires an explicit final-response or successful task-completion event in the matching local transcript.",
+          "deprecationMessage": "Both modes now use explicit session lifecycle events; read-state and diff-capture heuristics are no longer used."
         },
         "codexTaskNotifier.codexLogPath": {
           "type": "string",

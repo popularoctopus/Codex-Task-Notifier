@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-function page(nativeAudio = false) {
+function page(nativeAudio = false, stored = {}) {
   const html = fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
   const classes = new Set(), messages = [], players = [], plays = [];
   let receiver, gesture = false, failure;
@@ -11,6 +11,7 @@ function page(nativeAudio = false) {
   const body = node(), label = node();
   const menu = Object.assign(node(),{hidden:true}), menuButton = node();
   const enableSounds = Object.assign(node(),{hidden:true,parent:menu});
+  const volume = node(), volumeValue = node();
   const modes = ['dark','light'].map(value => Object.assign(node(),{value}));
   const sounds = [...html.matchAll(/name="sound" value="([^"]+)"/g)].map(match => Object.assign(node(),{value:match[1]}));
   const previews = sounds.filter(s => s.value !== 'none').map(s => Object.assign(node(),{dataset:{sound:s.value}}));
@@ -18,10 +19,10 @@ function page(nativeAudio = false) {
   const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
   vm.runInNewContext(script, {
     nativeAudio,
-    acquireVsCodeApi:()=>({getState:()=>({}),setState(){},postMessage(m){messages.push(m);}}),
+    acquireVsCodeApi:()=>({getState:()=>({...stored}),setState(){},postMessage(m){messages.push(m);}}),
     soundBase:'vscode-resource:/sounds/',
     window:{addEventListener(type,fn){receiver=fn;}},
-    document:{body,getElementById:id=>id==='status'?label:id==='menu'?menu:id==='menu-button'?menuButton:id==='enable-sounds'?enableSounds:node(),querySelectorAll:selector=>selector==='.preview'?previews:selector.includes('sound')?sounds:selector.includes('font')?fonts:selector.includes('mode')?modes:[]},
+    document:{body,getElementById:id=>id==='volume'?volume:id==='volume-value'?volumeValue:id==='status'?label:id==='menu'?menu:id==='menu-button'?menuButton:id==='enable-sounds'?enableSounds:node(),querySelectorAll:selector=>selector==='.preview'?previews:selector.includes('sound')?sounds:selector.includes('font')?fonts:selector.includes('mode')?modes:[]},
     Audio:class {
       constructor(url){this.src=url||'';this.currentTime=0;this.unlocked=false;players.push(this);}
       pause(){}
@@ -36,13 +37,46 @@ function page(nativeAudio = false) {
     }
   });
   return {
-    classes,messages,players,plays,label,body,menu,menuButton,enableSounds,modes,sounds,fonts,
+    classes,messages,players,plays,label,body,menu,menuButton,enableSounds,modes,sounds,fonts,volume,volumeValue,
     click(target){gesture=true;try{const event={target};target.events?.click?.(event);body.events.click(event);}finally{gesture=false;}},
     send(data){receiver({data:{type:'status',preferences:{codexSound:'flute.wav',codexFont:'"Arial", "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif',codexMode:'light'},...data}});},
     preview(name){gesture=true;try{previews.find(p=>p.dataset.sound===name).events.click();}finally{gesture=false;}},
     fail(error){failure=error;}
   };
 }
+
+test('volume defaults to full, persists slider changes, and restores host and local preferences', () => {
+  const p=page();
+  assert.equal(p.volume.value,'100');
+  p.volume.value='25'; p.volume.events.input();
+  assert.equal(p.messages.at(-1).values.codexVolume,25);
+  assert.equal(p.volumeValue.textContent,'25%');
+  p.preview('chime.wav');
+  assert.equal(p.players[0].volume,0.25);
+  p.send({state:'done',completed:true,preferences:{codexVolume:60}});
+  assert.equal(p.players[0].volume,0.6);
+  assert.equal(p.volume.value,'60');
+  assert.equal(p.plays.length,2);
+  assert.equal(page(true,{codexVolume:35}).volume.value,'35');
+  for (const [value,expected] of [[undefined,100],['bad',100],[-20,0],[150,100]]) {
+    p.send({state:'ready',preferences:{codexVolume:value}});
+    assert.equal(p.volume.value,String(expected));
+  }
+});
+
+for (const native of [true,false]) test(`zero volume mutes previews and completions while preserving Done (native=${native})`, () => {
+  const p=page(native);
+  p.volume.value='0'; p.volume.events.input();
+  p.preview('chime.wav');
+  p.send({state:'done',completed:true,preferences:{codexVolume:0}});
+  assert.equal(p.plays.length,0);
+  assert(!p.messages.some(m=>m.type==='playSound'));
+  assert.equal(p.volume.attributes['aria-valuetext'],'0% (muted)');
+  assert(p.classes.has('done-flash'));
+  p.volume.value='50'; p.volume.events.input();
+  p.preview('chime.wav');
+  assert(native ? p.messages.at(-1).type==='playSound' : p.plays.length===1);
+});
 
 test('fresh boards select Chime, Arial, and dark mode by default', () => {
   const p = page(true);
@@ -214,4 +248,13 @@ test('format failures retain diagnostics; interrupted and superseded plays do no
   p.preview('flute.wav');
   await Promise.resolve();
   assert.equal(p.messages.length,count);
+});
+
+test('Thinking renders without completion effects and clears when the turn returns Ready',()=>{
+  const p=page(true);p.send({state:'done',completed:true});
+  p.send({state:'thinking'});
+  assert.equal(p.label.textContent,'Thinking');assert(p.classes.has('thinking'));
+  assert(!p.classes.has('done-flash'));assert(!p.classes.has('done'));assert.equal(p.body.title,'');
+  p.send({state:'working'});assert(!p.classes.has('thinking'));assert(p.classes.has('working'));
+  p.send({state:'ready'});assert.equal(p.label.textContent,'Ready');assert(!p.classes.has('working'));
 });
